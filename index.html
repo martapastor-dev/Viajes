@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elige tu Camino del Norte</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Segoe UI', sans-serif; color: white; background: #1a1a1a; }
+
+    .map { height: 360px; width: 100%; border-radius: 10px; margin-top: 1.5rem; z-index: 1; }
+
+    nav {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: #e6a23c; }
+
+    section {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5rem 1.5rem 4rem;
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.45));
+      z-index: 1;
+    }
+
+    .card {
+      position: relative;
+      z-index: 2;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      padding: 2.5rem;
+      border-radius: 14px;
+      max-width: 950px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+    }
+
+    .card h1 { font-size: 2.8rem; margin-bottom: 0.6rem; }
+    .card h2 { font-size: 2rem; margin-bottom: 1rem; color: #e6a23c; }
+    .card h3 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #e6a23c; }
+    .card p, .card li { font-size: 1.1rem; line-height: 1.65; }
+    .card ul { margin-top: 0.75rem; padding-left: 1.5rem; }
+    .card .tag { display: inline-block; background: #e6a23c; color: #1a1a1a; padding: 0.25rem 0.75rem; border-radius: 4px; font-weight: bold; margin-bottom: 1rem; }
+
+    .columns { display: flex; gap: 1.5rem; margin-top: 1.2rem; }
+    .column { flex: 1; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
+    .column.recommended { border: 2px solid #e6a23c; background: rgba(230,162,60,0.12); }
+    .column p { font-size: 1rem; }
+    .column ul { padding-left: 1.2rem; font-size: 0.95rem; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.98rem; background: rgba(0,0,0,0.25); }
+    th, td { border: 1px solid rgba(255,255,255,0.2); padding: 0.65rem; text-align: left; vertical-align: top; }
+    th { background: rgba(255,255,255,0.18); font-weight: 600; }
+    td:first-child { font-weight: 600; color: #e6a23c; }
+
+    .arrow {
+      display: block;
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #e6a23c;
+      font-size: 1.5rem;
+      text-decoration: none;
+      opacity: 0.8;
+    }
+
+    .arrow:hover { opacity: 1; }
+
+    @media (max-width: 768px) {
+      .card { padding: 1.6rem; }
+      .card h1 { font-size: 2rem; }
+      .card h2 { font-size: 1.5rem; }
+      .columns { flex-direction: column; }
+      nav { gap: 0.8rem; }
+      nav a { font-size: 0.85rem; }
+      section { background-attachment: scroll; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#inicio">Inicio</a>
+    <a href="#resumen">Resumen</a>
+    <a href="#comparativa">Comparativa</a>
+    <a href="#opcion1">Opcion 1</a>
+    <a href="#opcion2">Opcion 2</a>
+    <a href="#opcion3">Opcion 3</a>
+    <a href="#turismo">Turismo</a>
+    <a href="#consejo">Consejo</a>
+  </nav>
+
+  <!-- INICIO -->
+  <section id="inicio" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/8/8e/Acantilados_de_Alfoz_de_Lloredo_%28To%C3%B1anes%29%2C_Camino_del_norte_costero.jpg');">
+    <div class="overlay"></div>
+    <div class="card" style="text-align: center;">
+      <span class="tag">29 ago - 6 sep · 9 dias</span>
+      <h1>Elige tu Camino del Norte</h1>
+      <p>Tres propuestas para recorrer la costa cantabrica combinando caminatas, playas, pueblos y sidra.</p>
+      <a class="arrow" href="#resumen">v</a>
+    </div>
+  </section>
+
+  <!-- RESUMEN -->
+  <section id="resumen" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/c6/20220209_Panel_Camino_Santiago_cruce_Ont%C3%B3n_Baltezana.jpg');">
+    <div class="overlay"></div>
+    <div class="card">
+      <h2>Las tres opciones</h2>
+      <div class="columns">
+        <div class="column recommended">
+          <h3>Opcion 1</h3>
+          <p><strong>Comillas - Villaviciosa (120 km)</strong></p>
+        </div>
+        <div class="column">
+          <h3>Opcion 2</h3>
+          <p><strong>Santander - Llanes (103 km)</strong></p>
+        </div>
+        <div class="column">
+          <h3>Opcion 3</h3>
+          <p><strong>Llanes - Gijon (99,8 km)</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARATIVA -->
+  <section id="comparativa" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ef/Camino_del_Norte_%28246664602%29.jpg');">
+    <div class="overlay"></div>
+    <div class="card">
+      <table>
+        <tr>
+          <th></th>
+          <th>Opcion 1</th>
+          <th>Opcion 2</th>
+          <th>Opcion 3</th>
+        </tr>
+        <tr>
+          <td>Trayecto</td>
+          <td>Comillas - Villaviciosa</td>
+          <td>Santander - Llanes</td>
+          <td>Llanes - Gijon</td>
+        </tr>
+        <tr>
+          <td>Etapas completas</td>
+          <td>5</td>
+          <td>4</td>
+          <td>4</td>
+        </tr>
+        <tr>
+          <td>Media de km diarios</td>
+          <td>22 km</td>
+          <td>26 km</td>
+          <td>25 km</td>
+        </tr>
+        <tr>
+          <td>Maximo km en un dia</td>
+          <td>32 km (Llanes - Ribadesella)</td>
+          <td>30 km (Santander - Santillana del Mar)</td>
+          <td>32 km (Llanes - Ribadesella)</td>
+        </tr>
+        <tr>
+          <td>Dias de turismo</td>
+          <td>3</td>
+          <td>4</td>
+          <td>4</td>
+        </tr>
+        <tr>
+          <td>Pueblos y lugares destacados</td>
+          <td>Comillas, Colombres, Llanes, Ribadesella, Colunga, Villaviciosa, Lastres, Tazones</td>
+          <td>Santander, Santillana del Mar, Comillas, Colombres, Llanes, Picos de Europa</td>
+          <td>Llanes, Ribadesella, Colunga, Villaviciosa, Gijon, Lastres, Tazones, Mirador del Fito</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- OPCION 1 -->
+  <section id="opcion1" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/6d/Acantilados_de_To%C3%B1anes_en_la_Costa_occidental_de_Cantabria%2C_entre_Santillana_del_mar_y_Comillas.jpg');">
+    <div class="overlay"></div>
+    <div class="card">
+      <span class="tag">Opcion 1 - Recomendada</span>
+      <h2>Comillas - Gijon</h2>
+      <p>La mejor combinacion de camino, pueblos y descanso.</p>
+      <div class="columns">
+        <div class="column">
+          <h3>Itinerario</h3>
+          <ul>
+            <li><strong>Dia 1:</strong> Madrid - Comillas. Tarde libre para visitar el Capricho de Gaudi, el Palacio de Sobrellano y el puerto.</li>
+            <li><strong>Dia 2:</strong> Comillas - Colombres (27 km)</li>
+            <li><strong>Dia 3:</strong> Colombres - Llanes (23 km)</li>
+            <li><strong>Dia 4:</strong> Llanes - Ribadesella (32 km)</li>
+            <li><strong>Dia 5:</strong> Descanso y turismo en Ribadesella</li>
+            <li><strong>Dia 6:</strong> Ribadesella - Colunga (20 km)</li>
+            <li><strong>Dia 7:</strong> Colunga - Villaviciosa (18 km) o transporte</li>
+            <li><strong>Dia 8:</strong> Tazones, Lastres, Mirador del Fito y sidreria</li>
+            <li><strong>Dia 9:</strong> Regreso a Madrid</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Lugares donde reservar</h3>
+          <ul>
+            <p>8 noches</p>
+            <li><strong>Comillas</strong> - noche de llegada</li>
+            <li><strong>Colombres</strong> - despues de la primera etapa</li>
+            <li><strong>Llanes</strong> - segunda etapa</li>
+            <li><strong>Ribadesella</strong> - 2 noches (etapa + dia de turismo)</li>
+            <li><strong>Colunga</strong> - cuarta etapa</li>
+            <li><strong>Villaviciosa</strong> - quinta etapa</li>
+            <li><strong>Gijon</strong> - si se hace la ultima etapa hasta alli</li>
+          </ul>
+        </div>
+      </div>
+      <div class="map" id="mapa-opcion1"></div>
+    </div>
+  </section>
+
+  <!-- OPCION 2 -->
+  <section id="opcion2" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/0/05/Camino_de_Santiago_por_la_playa_de_Helgueras.JPG');">
+    <div class="overlay"></div>
+    <div class="card">
+      <span class="tag">Opcion 2</span>
+      <h2>Santander - Llanes</h2>
+      <p>Una ruta mas oriental con visita a Picos de Europa.</p>
+      <div class="columns">
+        <div class="column">
+          <h3>Itinerario</h3>
+          <ul>
+            <li><strong>Dia 1:</strong> Madrid - Santander</li>
+            <li><strong>Dia 2:</strong> Santander - Santillana (30 km)</li>
+            <li><strong>Dia 3:</strong> Santillana - Comillas (23 km)</li>
+            <li><strong>Dia 4:</strong> Turismo en Comillas</li>
+            <li><strong>Dia 5:</strong> Comillas - Colombres</li>
+            <li><strong>Dia 6:</strong> Colombres - Llanes</li>
+            <li><strong>Dia 7:</strong> Turismo en Llanes</li>
+            <li><strong>Dia 8:</strong> Playa + Picos de Europa</li>
+            <li><strong>Dia 9:</strong> Vuelta a Madrid</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Lugares donde reservar</h3>
+          <ul>
+            <p>7 noches</p>
+            <li><strong>Santander</strong> - noche de llegada</li>
+            <li><strong>Santillana del Mar</strong> - primera etapa</li>
+            <li><strong>Comillas</strong> - 2 noches (etapa + dia de turismo)</li>
+            <li><strong>Colombres</strong> - cuarta etapa</li>
+            <li><strong>Llanes</strong> - 2 noches (etapa + dia de turismo)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="map" id="mapa-opcion2"></div>
+    </div>
+  </section>
+
+  <!-- OPCION 3 -->
+  <section id="opcion3" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/fe/Camino_de_Santiago_near_Villahormes_-_Asturias_-_Spain_-_panoramio.jpg');">
+    <div class="overlay"></div>
+    <div class="card">
+      <span class="tag">Opcion 3</span>
+      <h2>Llanes - Gijon</h2>
+      <p>Menos kilometros y mas tiempo para disfrutar Asturias. Distribucion de 9 dias con 4 etapas y 4 dias de turismo.</p>
+      <div class="columns">
+        <div class="column">
+          <h3>Itinerario</h3>
+          <ul>
+            <li><strong>Dia 1:</strong> Madrid - Llanes. Tarde libre para pasear por el pueblo y la playa.</li>
+            <li><strong>Dia 2:</strong> Llanes - Ribadesella (32 km)</li>
+            <li><strong>Dia 3:</strong> Descanso y turismo en Ribadesella</li>
+            <li><strong>Dia 4:</strong> Ribadesella - Colunga (20 km)</li>
+            <li><strong>Dia 5:</strong> Descanso y turismo en Colunga</li>
+            <li><strong>Dia 6:</strong> Colunga - Villaviciosa (18 km)</li>
+            <li><strong>Dia 7:</strong> Turismo: Tazones, Lastres, Mirador del Fito y sidreria</li>
+            <li><strong>Dia 8:</strong> Villaviciosa - Gijon (29,8 km)</li>
+            <li><strong>Dia 9:</strong> Vuelta a Madrid</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Lugares donde reservar</h3>
+          <ul>
+            <p>8 noches</p>
+            <li><strong>Llanes</strong> - primera noche</li>
+            <li><strong>Ribadesella</strong> - 2 noches (etapa + dia de turismo)</li>
+            <li><strong>Colunga</strong> - 2 noches (etapa + dia de turismo)</li>
+            <li><strong>Villaviciosa</strong> - 2 noches (etapa + dia de turismo)</li>
+            <li><strong>Gijon</strong> - ultima noche antes de volver</li>
+          </ul>
+        </div>
+      </div>
+      <div class="map" id="mapa-opcion3"></div>
+    </div>
+  </section>
+
+  <!-- TURISMO -->
+  <section id="turismo" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e2/Camino_del_Norte_%284115805640%29.jpg');">
+    <div class="overlay"></div>
+    <div class="card">
+      <h2>Dias de turismo en cada zona</h2>
+      <div class="columns">
+        <div class="column">
+          <h3>Comillas</h3>
+          <ul>
+            <li>El Capricho de Gaudi</li>
+            <li>Palacio de Sobrellano</li>
+            <li>Universidad Pontificia</li>
+            <li>Playa y atardecer en el puerto</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Llanes</h3>
+          <ul>
+            <li>Paseo de San Pedro</li>
+            <li>Cubos de la Memoria</li>
+            <li>Playa del Sablon</li>
+            <li>Puerto y cena de pescado</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Ribadesella</h3>
+          <ul>
+            <li>Cueva de Tito Bustillo</li>
+            <li>Playa Santa Marina</li>
+            <li>Ermita de la Guia</li>
+            <li>Paseo maritimo</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Villaviciosa</h3>
+          <ul>
+            <li>Lastres</li>
+            <li>Tazones</li>
+            <li>Mirador del Fito</li>
+            <li>Sidreria tradicional</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONSEJO -->
+  <section id="consejo" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/78/Atardecer_%281433980202%29.jpg');">
+    <div class="overlay"></div>
+    <div class="card" style="text-align: center;">
+      <h2>Consejo final</h2>
+      <p>Disfrutemos del camino, las vistas y la paz. ¡Y de la sidra de Asturias!</p>
+    </div>
+  </section>
+
+  <script>
+    function initMap(id, routePoints, tourismPoints) {
+      const map = L.map(id);
+      const routeCoords = routePoints.map(p => p.coords);
+      const polyline = L.polyline(routeCoords, { color: '#e6a23c', weight: 4, opacity: 0.9 }).addTo(map);
+      const layers = [];
+
+      routePoints.forEach(p => {
+        const isTourism = tourismPoints.some(t => t.name === p.name);
+        if (isTourism) {
+          const marker = L.circleMarker(p.coords, {
+            radius: 10, color: '#ff69b4', fillColor: '#ff69b4', fillOpacity: 0.85, weight: 2
+          }).addTo(map).bindPopup(p.name + ' (etapa + turismo)');
+          layers.push(marker);
+        } else {
+          const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
+          layers.push(marker);
+        }
+      });
+
+      tourismPoints.filter(t => !routePoints.some(r => r.name === t.name)).forEach(t => {
+        const marker = L.circleMarker(t.coords, {
+          radius: 10, color: '#ff69b4', fillColor: '#ff69b4', fillOpacity: 0.85, weight: 2
+        }).addTo(map).bindPopup(t.name + ' (turismo)');
+        layers.push(marker);
+      });
+
+      if (layers.length > 0) {
+        const group = L.featureGroup(layers);
+        map.fitBounds(group.getBounds(), { padding: [25, 25] });
+      }
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+    }
+
+    initMap('mapa-opcion1', [
+      { name: 'Comillas', coords: [43.3856358, -4.2915071] },
+      { name: 'Colombres', coords: [43.375467, -4.5439281] },
+      { name: 'Llanes', coords: [43.4195333, -4.7509136] },
+      { name: 'Ribadesella', coords: [43.4614537, -5.0591711] },
+      { name: 'Colunga', coords: [43.4852921, -5.2706109] },
+      { name: 'Villaviciosa', coords: [43.4813664, -5.4353459] },
+      { name: 'Gijon', coords: [43.545229, -5.6619245] }
+    ], [
+      { name: 'Comillas', coords: [43.3856358, -4.2915071] },
+      { name: 'Ribadesella', coords: [43.4614537, -5.0591711] },
+      { name: 'Villaviciosa', coords: [43.4813664, -5.4353459] },
+      { name: 'Lastres', coords: [43.5135613, -5.2694475] },
+      { name: 'Tazones', coords: [43.5447919, -5.4020914] }
+    ]);
+
+    initMap('mapa-opcion2', [
+      { name: 'Santander', coords: [43.4614116, -3.8093031] },
+      { name: 'Santillana del Mar', coords: [43.3889587, -4.1090509] },
+      { name: 'Comillas', coords: [43.3856358, -4.2915071] },
+      { name: 'Colombres', coords: [43.375467, -4.5439281] },
+      { name: 'Llanes', coords: [43.4195333, -4.7509136] }
+    ], [
+      { name: 'Comillas', coords: [43.3856358, -4.2915071] },
+      { name: 'Llanes', coords: [43.4195333, -4.7509136] }
+    ]);
+
+    initMap('mapa-opcion3', [
+      { name: 'Llanes', coords: [43.4195333, -4.7509136] },
+      { name: 'Ribadesella', coords: [43.4614537, -5.0591711] },
+      { name: 'Colunga', coords: [43.4852921, -5.2706109] },
+      { name: 'Villaviciosa', coords: [43.4813664, -5.4353459] },
+      { name: 'Gijon', coords: [43.545229, -5.6619245] }
+    ], []);
+  </script>
+
+</body>
+</html>
