@@ -45,7 +45,6 @@
       padding: 5rem 1.5rem 4rem;
       background-size: cover;
       background-position: center;
-      background-attachment: fixed;
       background-repeat: no-repeat;
     }
 
@@ -82,6 +81,9 @@
     .column p { font-size: 1rem; }
     .column ul { padding-left: 1.2rem; font-size: 0.95rem; }
 
+    a.column { color: inherit; text-decoration: none; cursor: pointer; transition: transform 0.2s, background 0.2s; }
+    a.column:hover { transform: translateY(-4px); background: rgba(230,162,60,0.18); border-color: #e6a23c; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.98rem; background: rgba(0,0,0,0.25); }
     th, td { border: 1px solid rgba(255,255,255,0.2); padding: 0.65rem; text-align: left; vertical-align: top; }
     th { background: rgba(255,255,255,0.18); font-weight: 600; }
@@ -106,7 +108,6 @@
       .columns { flex-direction: column; }
       nav { gap: 0.8rem; }
       nav a { font-size: 0.85rem; }
-      section { background-attachment: scroll; }
     }
   </style>
 </head>
@@ -124,7 +125,7 @@
   </nav>
 
   <!-- INICIO -->
-  <section id="inicio" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/8/8e/Acantilados_de_Alfoz_de_Lloredo_%28To%C3%B1anes%29%2C_Camino_del_norte_costero.jpg');">
+  <section id="inicio" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Acantilados_de_Alfoz_de_Lloredo_%28To%C3%B1anes%29%2C_Camino_del_norte_costero.jpg/1280px-Acantilados_de_Alfoz_de_Lloredo_%28To%C3%B1anes%29%2C_Camino_del_norte_costero.jpg');">
     <div class="overlay"></div>
     <div class="card" style="text-align: center;">
       <span class="tag">29 ago - 6 sep · 9 dias</span>
@@ -135,29 +136,29 @@
   </section>
 
   <!-- RESUMEN -->
-  <section id="resumen" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/c6/20220209_Panel_Camino_Santiago_cruce_Ont%C3%B3n_Baltezana.jpg');">
+  <section id="resumen" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/20220209_Panel_Camino_Santiago_cruce_Ont%C3%B3n_Baltezana.jpg/1280px-20220209_Panel_Camino_Santiago_cruce_Ont%C3%B3n_Baltezana.jpg');">
     <div class="overlay"></div>
     <div class="card">
       <h2>Las tres opciones</h2>
       <div class="columns">
-        <div class="column recommended">
+        <a class="column" href="#opcion1">
           <h3>Opcion 1</h3>
           <p><strong>Comillas - Villaviciosa (120 km)</strong></p>
-        </div>
-        <div class="column">
+        </a>
+        <a class="column" href="#opcion2">
           <h3>Opcion 2</h3>
           <p><strong>Santander - Llanes (103 km)</strong></p>
-        </div>
-        <div class="column">
+        </a>
+        <a class="column" href="#opcion3">
           <h3>Opcion 3</h3>
           <p><strong>Llanes - Gijon (99,8 km)</strong></p>
-        </div>
+        </a>
       </div>
     </div>
   </section>
 
   <!-- COMPARATIVA -->
-  <section id="comparativa" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ef/Camino_del_Norte_%28246664602%29.jpg');">
+  <section id="comparativa" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Camino_del_Norte_%28246664602%29.jpg/1280px-Camino_del_Norte_%28246664602%29.jpg');">
     <div class="overlay"></div>
     <div class="card">
       <table>
@@ -208,7 +209,7 @@
   </section>
 
   <!-- OPCION 1 -->
-  <section id="opcion1" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/6d/Acantilados_de_To%C3%B1anes_en_la_Costa_occidental_de_Cantabria%2C_entre_Santillana_del_mar_y_Comillas.jpg');">
+  <section id="opcion1" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Acantilados_de_To%C3%B1anes_en_la_Costa_occidental_de_Cantabria%2C_entre_Santillana_del_mar_y_Comillas.jpg/1280px-Acantilados_de_To%C3%B1anes_en_la_Costa_occidental_de_Cantabria%2C_entre_Santillana_del_mar_y_Comillas.jpg');">
     <div class="overlay"></div>
     <div class="card">
       <span class="tag">Opcion 1 - Recomendada</span>
@@ -248,7 +249,7 @@
   </section>
 
   <!-- OPCION 2 -->
-  <section id="opcion2" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/0/05/Camino_de_Santiago_por_la_playa_de_Helgueras.JPG');">
+  <section id="opcion2" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Camino_de_Santiago_por_la_playa_de_Helgueras.JPG/1280px-Camino_de_Santiago_por_la_playa_de_Helgueras.JPG');">
     <div class="overlay"></div>
     <div class="card">
       <span class="tag">Opcion 2</span>
@@ -286,7 +287,7 @@
   </section>
 
   <!-- OPCION 3 -->
-  <section id="opcion3" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/fe/Camino_de_Santiago_near_Villahormes_-_Asturias_-_Spain_-_panoramio.jpg');">
+  <section id="opcion3" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Camino_de_Santiago_near_Villahormes_-_Asturias_-_Spain_-_panoramio.jpg/1280px-Camino_de_Santiago_near_Villahormes_-_Asturias_-_Spain_-_panoramio.jpg');">
     <div class="overlay"></div>
     <div class="card">
       <span class="tag">Opcion 3</span>
@@ -324,7 +325,7 @@
   </section>
 
   <!-- TURISMO -->
-  <section id="turismo" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e2/Camino_del_Norte_%284115805640%29.jpg');">
+  <section id="turismo" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Camino_del_Norte_%284115805640%29.jpg/1280px-Camino_del_Norte_%284115805640%29.jpg');">
     <div class="overlay"></div>
     <div class="card">
       <h2>Dias de turismo en cada zona</h2>
@@ -370,7 +371,7 @@
   </section>
 
   <!-- CONSEJO -->
-  <section id="consejo" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/78/Atardecer_%281433980202%29.jpg');">
+  <section id="consejo" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Atardecer_%281433980202%29.jpg/1280px-Atardecer_%281433980202%29.jpg');">
     <div class="overlay"></div>
     <div class="card" style="text-align: center;">
       <h2>Consejo final</h2>
