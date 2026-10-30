@@ -141,6 +141,7 @@ origin_lat, origin_lon, origin_name = st.session_state.origin
 drive_limit = factor = None
 towards = False
 selected_munis: list[str] = []
+drive_bands_sel: list[int] = []
 if scope_kind == SCOPE_DRIVE:
     sb.markdown(f"**Punto de referencia:** {origin_name}")
     with sb.expander("Cambiar punto de referencia"):
@@ -157,6 +158,7 @@ if scope_kind == SCOPE_DRIVE:
             st.rerun()
     drive_limit = sb.slider("Minutos en coche (máximo)", 5, config.SETTINGS.drive_max_minutes, config.DEFAULT_DRIVE_MINUTES, 5)
     towards = sb.radio("Sentido del viaje", ["Desde el punto", "Hacia el punto"], horizontal=True) == "Hacia el punto"
+    drive_bands_sel = list(config.DEFAULT_DRIVE_BANDS)
     factor = sb.slider(
         "Factor de tráfico",
         1.0,
@@ -219,11 +221,16 @@ dmin = drive_minutes(origin_lon, origin_lat, towards)
 stations["drive_min"] = stations["station_id"].map(dmin) * (factor or 1.0)
 
 scope_gdf = None
+drive_band_gdfs: dict[int, gpd.GeoDataFrame] = {}
 if scope_kind == SCOPE_DRIVE:
     stations = stations[stations["drive_min"] <= drive_limit]
     wkb = drive_area_wkb(origin_lon, origin_lat, towards, drive_limit / factor)
     if wkb:
         scope_gdf = gpd.GeoDataFrame(geometry=[shapely.from_wkb(wkb)], crs=config.CRS_METRIC)
+    for band_min in drive_bands_sel:
+        bw = drive_area_wkb(origin_lon, origin_lat, towards, band_min / factor)
+        if bw:
+            drive_band_gdfs[band_min] = gpd.GeoDataFrame(geometry=[shapely.from_wkb(bw)], crs=config.CRS_METRIC)
 elif scope_kind == SCOPE_CITY:
     stations = stations[stations["municipality"] == "Madrid"]
     scope_gdf = munis[munis["name"] == "Madrid"]
@@ -410,7 +417,10 @@ with tab_map:
     if scope_kind == SCOPE_CUSTOM:
         mapping.add_drawing(m)
     scope_label = {SCOPE_DRIVE: f"Área a ≤{drive_limit} min en coche"}.get(scope_kind, "Ámbito")
-    mapping.add_scope(m, scope_gdf, scope_label, color="#d62728" if scope_kind == SCOPE_DRIVE else "#555555")
+    if scope_kind != SCOPE_DRIVE or not drive_band_gdfs:
+        mapping.add_scope(m, scope_gdf, scope_label, color="#d62728" if scope_kind == SCOPE_DRIVE else "#555555")
+    else:
+        mapping.add_drive_bands(m, drive_band_gdfs, "CGS")
     mapping.add_lines(m, lines_shown)
     label = "Andando" if area_kind == AREA_ISO else "Círculo"
     mapping.add_isochrones(m, polys, stations, individual=len(stations) <= MAX_INDIVIDUAL_POLYGONS, label=label)

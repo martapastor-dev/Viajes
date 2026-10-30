@@ -42,6 +42,22 @@ def add_drawing(m: folium.Map) -> None:
     ).add_to(m)
 
 
+def add_drive_bands(m: folium.Map, bands: dict[int, gpd.GeoDataFrame], origin_label: str) -> None:
+    """Áreas por banda de tiempo en coche al punto, en tonos rojos (20 min más intenso que 30)."""
+    fill = {0: "#d62728", 1: "#ef9a9a"}
+    for i, (minutes, gdf) in enumerate(sorted(bands.items())):
+        if gdf is None or gdf.empty:
+            continue
+        color = fill.get(i, "#ef9a9a")
+        fg = folium.FeatureGroup(name=f"En coche a {origin_label}: ≤{minutes} min", show=True)
+        folium.GeoJson(
+            gdf.to_crs(config.CRS_WGS84).geometry.union_all().__geo_interface__,
+            style_function=lambda _, c=color: {"color": c, "weight": 1.5, "fillColor": c, "fillOpacity": 0.18, "dashArray": "6"},
+            tooltip=f"≤{minutes} min en coche a {origin_label}",
+        ).add_to(fg)
+        fg.add_to(m)
+
+
 def add_scope(m: folium.Map, scope: gpd.GeoDataFrame, name: str, color: str = "#555555", show=True) -> None:
     if scope is None or scope.empty:
         return

@@ -97,7 +97,9 @@ class Origin:
 
 
 # Punto de referencia por defecto del ámbito "a X minutos en coche".
-DEFAULT_ORIGIN = Origin("Ciudad Financiera Banco Santander (Boadilla del Monte)", 40.3930154, -3.8691104)
+DEFAULT_ORIGIN = Origin("CGS (Ciudad Financiera Banco Santander)", 40.3930154, -3.8691104)
+# Bandas del ámbito en coche al punto de referencia por defecto, en minutos.
+DEFAULT_DRIVE_BANDS = (20, 30)
 DEFAULT_DRIVE_MINUTES = 30
 DEFAULT_EXCLUDED_MUNICIPALITIES = ["Alcorcón", "Móstoles"]
 DEFAULT_EXCLUDED_STATIONS = ["La Fortuna"]
