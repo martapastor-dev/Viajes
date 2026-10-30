@@ -99,6 +99,8 @@ class Origin:
 # Punto de referencia por defecto del ámbito "a X minutos en coche".
 DEFAULT_ORIGIN = Origin("Ciudad Financiera Banco Santander (Boadilla del Monte)", 40.3930154, -3.8691104)
 DEFAULT_DRIVE_MINUTES = 30
+DEFAULT_EXCLUDED_MUNICIPALITIES = ["Alcorcón", "Móstoles"]
+DEFAULT_EXCLUDED_STATIONS = ["La Fortuna"]
 
 
 @dataclass(frozen=True)

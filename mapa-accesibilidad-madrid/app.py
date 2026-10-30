@@ -178,6 +178,18 @@ elif scope_kind == SCOPE_CUSTOM:
         st.session_state.custom_zone = None
         st.rerun()
 
+excluded_munis = sb.multiselect(
+    "Excluir municipios",
+    munis["name"].tolist(),
+    default=[n for n in config.DEFAULT_EXCLUDED_MUNICIPALITIES if n in set(munis["name"])],
+)
+station_names = sorted(stations_all["name"].unique())
+excluded_stations = sb.multiselect(
+    "Excluir estaciones",
+    station_names,
+    default=[n for n in config.DEFAULT_EXCLUDED_STATIONS if n in set(station_names)],
+)
+
 sb.header("Desplazamiento a pie")
 travel_mode = sb.radio("Medio", ["Andando", "Bicicleta (próximamente)", "Coche (próximamente)"])
 if travel_mode != "Andando":
@@ -197,7 +209,12 @@ overlap_minutes = sb.selectbox("Solapes para el tiempo de", times, index=min(1, 
 
 # --------------------------------------------------------------------------- filtrado de estaciones
 
-stations = stations_all[stations_all["mode"].isin(selected_modes) & stations_all["in_region"]].copy()
+stations = stations_all[
+    stations_all["mode"].isin(selected_modes)
+    & stations_all["in_region"]
+    & ~stations_all["municipality"].isin(excluded_munis)
+    & ~stations_all["name"].isin(excluded_stations)
+].copy()
 dmin = drive_minutes(origin_lon, origin_lat, towards)
 stations["drive_min"] = stations["station_id"].map(dmin) * (factor or 1.0)
 
@@ -222,6 +239,9 @@ elif scope_kind == SCOPE_CUSTOM:
         stations = stations.iloc[0:0]
 else:
     scope_gdf = region
+if scope_gdf is not None and excluded_munis:
+    cut = munis[munis["name"].isin(excluded_munis)].to_crs(scope_gdf.crs).geometry.union_all()
+    scope_gdf = gpd.GeoDataFrame(geometry=[scope_gdf.geometry.union_all().difference(cut)], crs=scope_gdf.crs)
 
 line_options = sorted(
     {(m, ln) for m, ls in zip(stations["mode"], stations["lines"]) for ln in ls},
