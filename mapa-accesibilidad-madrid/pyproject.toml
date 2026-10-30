@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accesibilidad-madrid"
+version = "0.1.0"
+description = "Mapa interactivo de accesibilidad peatonal a Metro y Cercanías en Madrid"
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas>=1.0",
+    "shapely>=2.0",
+    "pyproj>=3.6",
+    "pyarrow>=14",
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "osmium>=4.0",
+    "osmnx>=2.0",
+    "folium>=0.17",
+    "streamlit>=1.40",
+    "streamlit-folium>=0.22",
+    "openpyxl>=3.1",
+    "geopy>=2.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 130
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B905"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
