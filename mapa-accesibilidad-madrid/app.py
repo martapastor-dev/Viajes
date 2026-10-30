@@ -246,6 +246,11 @@ speed = sb.slider(
 )
 area_kind = sb.radio("Tipo de área", [AREA_ISO, AREA_CIRCLE])
 show_overlaps = sb.checkbox("Mostrar zonas donde se solapan varias estaciones", value=False)
+clip_to_scope = sb.checkbox(
+    "Recortar las áreas andando al ámbito",
+    value=True,
+    help="Solo se pintan las partes de las áreas andando que están dentro del ámbito (p. ej. la zona roja en coche).",
+)
 overlap_minutes = sb.selectbox("Solapes para el tiempo de", times, index=min(1, len(times) - 1)) if show_overlaps else None
 
 # --------------------------------------------------------------------------- filtrado de estaciones
@@ -323,6 +328,11 @@ if sel_lines:
 # --------------------------------------------------------------------------- áreas
 
 
+def _clip(polys: gpd.GeoDataFrame, zone) -> gpd.GeoDataFrame:
+    clipped = polys.to_crs(config.CRS_METRIC).assign(geometry=lambda d: d.geometry.intersection(zone))
+    return clipped[~clipped.geometry.is_empty].to_crs(polys.crs)
+
+
 def areas_for(minutes: int) -> gpd.GeoDataFrame:
     budget = isochrones.walk_budget_m(minutes, speed)
     if area_kind == AREA_CIRCLE:
@@ -333,6 +343,9 @@ def areas_for(minutes: int) -> gpd.GeoDataFrame:
 polys = {}
 if travel_mode == "Andando" and len(stations):
     polys = {m: areas_for(m) for m in times}
+    if clip_to_scope and scope_gdf is not None:
+        clip_zone = scope_gdf.to_crs(config.CRS_METRIC).geometry.union_all()
+        polys = {m: _clip(p, clip_zone) for m, p in polys.items()}
 overlaps = isochrones.overlap_zones(polys[overlap_minutes]) if show_overlaps and overlap_minutes in polys else None
 
 tab_map, tab_st, tab_homes, tab_export, tab_info = st.tabs(
