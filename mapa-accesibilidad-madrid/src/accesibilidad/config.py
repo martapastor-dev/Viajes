@@ -99,8 +99,31 @@ class Origin:
 # Punto de referencia por defecto del ámbito "a X minutos en coche".
 DEFAULT_ORIGIN = Origin("CGS (Ciudad Financiera Banco Santander)", 40.3930154, -3.8691104)
 # Bandas del ámbito en coche al punto de referencia por defecto, en minutos.
-DEFAULT_DRIVE_BANDS = (20, 30)
-DEFAULT_DRIVE_MINUTES = 30
+DEFAULT_DRIVE_BANDS = (20, 30, 35)
+DEFAULT_DRIVE_MINUTES = 35
+
+
+@dataclass(frozen=True)
+class TrafficProfile:
+    """Ralentización estimada (multiplicador del tiempo sin tráfico) por clase de vía y zona.
+
+    Aproximación para un día laborable saliendo a las 8:30 hacia CGS, calibrada a mano con tiempos de
+    Google Maps dados por la usuaria (Sol 25-40 min, Aravaca 20, Moncloa 20). No son datos de tráfico medidos.
+    Claves de `road_factors`: 1 M-30, 2 M-40, 3 M-50, 4 otras autovías, 5 vías principales, 6 resto.
+    """
+
+    label: str = "Hora punta 8:30 (estimado)"
+    road_factors: tuple[tuple[int, float], ...] = ((1, 2.0), (2, 1.3), (3, 1.15), (4, 1.0), (5, 1.25), (6, 1.3))
+    # Calles (clases 5 y 6) según la distancia a Sol: dentro de ~M-30, hasta ~M-40, resto.
+    city_center: tuple[float, float] = (40.4169, -3.7035)
+    urban_rings_m: tuple[tuple[float, float], ...] = ((5_000, 2.8), (10_000, 1.9))
+    # Colas en los accesos a Boadilla y a CGS: factor mínimo cerca del destino y minutos fijos de entrada.
+    near_origin_m: float = 3_000
+    near_origin_factor: float = 1.15
+    fixed_minutes: float = 0.0
+
+
+RUSH_HOUR = TrafficProfile()
 DEFAULT_EXCLUDED_MUNICIPALITIES = ["Alcorcón", "Getafe", "Leganés", "Móstoles"]
 DEFAULT_EXCLUDED_STATIONS = ["La Fortuna"]
 

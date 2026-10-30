@@ -107,6 +107,24 @@ def drive_speed_kmh(tags: dict[str, str], maxspeed_factor: float) -> float:
     return float(DRIVE_DEFAULT_SPEED.get(tags.get("highway", ""), 25))
 
 
+# Clases de vía para el perfil de tráfico (ver config.TrafficProfile).
+ROAD_M30, ROAD_M40, ROAD_M50, ROAD_HIGHWAY, ROAD_ARTERIAL, ROAD_LOCAL = range(1, 7)
+_RING_REFS = {"M-30": ROAD_M30, "M-40": ROAD_M40, "M-50": ROAD_M50}
+
+
+def road_class(tags: dict[str, str]) -> int:
+    highway = tags.get("highway", "")
+    refs = {r.strip() for r in tags.get("ref", "").split(";")}
+    for ref, cls in _RING_REFS.items():
+        if ref in refs:
+            return cls
+    if highway.startswith(("motorway", "trunk")):
+        return ROAD_HIGHWAY
+    if highway.startswith(("primary", "secondary")):
+        return ROAD_ARTERIAL
+    return ROAD_LOCAL
+
+
 def drive_direction(tags: dict[str, str]) -> int:
     """1 = solo sentido de digitalización, -1 = solo inverso, 0 = doble sentido."""
     oneway = tags.get("oneway", "")
@@ -128,7 +146,7 @@ def extract_networks(pbf: Path, out_dir: Path, maxspeed_factor: float | None = N
     lons: list[float] = []
     lats: list[float] = []
     walk_u, walk_v = [], []
-    drv_u, drv_v, drv_speed = [], [], []
+    drv_u, drv_v, drv_speed, drv_cls = [], [], [], []
 
     def idx(n) -> int:
         i = node_index.get(n.ref)
@@ -163,15 +181,18 @@ def extract_networks(pbf: Path, out_dir: Path, maxspeed_factor: float | None = N
         if drive:
             speed = drive_speed_kmh(tags, maxspeed_factor)
             direction = drive_direction(tags)
+            cls = road_class(tags)
             for a, b in pairs:
                 if direction >= 0:
                     drv_u.append(a)
                     drv_v.append(b)
                     drv_speed.append(speed)
+                    drv_cls.append(cls)
                 if direction <= 0:
                     drv_u.append(b)
                     drv_v.append(a)
                     drv_speed.append(speed)
+                    drv_cls.append(cls)
 
     to_metric = Transformer.from_crs(config.CRS_WGS84, config.CRS_METRIC, always_xy=True)
     x, y = to_metric.transform(np.asarray(lons), np.asarray(lats))
@@ -186,6 +207,7 @@ def extract_networks(pbf: Path, out_dir: Path, maxspeed_factor: float | None = N
     walk_edges = edges(walk_u, walk_v).drop_duplicates(["u", "v"])
     drive_edges = edges(drv_u, drv_v)
     drive_edges["speed_kmh"] = np.asarray(drv_speed, dtype=np.float32)
+    drive_edges["road_class"] = np.asarray(drv_cls, dtype=np.int8)
     drive_edges = drive_edges.drop_duplicates(["u", "v"])
 
     out_dir.mkdir(parents=True, exist_ok=True)

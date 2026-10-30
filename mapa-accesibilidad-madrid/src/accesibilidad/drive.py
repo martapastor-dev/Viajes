@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import shapely
 
 from . import config
-from .graph import DriveGraph
+from .graph import DriveGraph, to_metric
 
 
 def drive_times(dg: DriveGraph, lon: float, lat: float, max_minutes: float, towards: bool = False) -> np.ndarray:
@@ -33,3 +34,25 @@ def drive_area(dg: DriveGraph, node_minutes: np.ndarray, minutes: float, cell_m:
     parts = [shapely.Polygon(p.exterior) for p in shapely.get_parts(poly) if p.area >= 4 * cell_m**2]
     poly = shapely.simplify(shapely.union_all(parts), cell_m / 2)
     return gpd.GeoDataFrame({"minutes": [minutes]}, geometry=[poly], crs=config.CRS_METRIC)
+
+
+def rush_hour_factors(
+    edges: pd.DataFrame, nodes: pd.DataFrame, profile: config.TrafficProfile, origin_lonlat: tuple[float, float]
+) -> np.ndarray:
+    """Multiplicador de tiempo por arista según su clase de vía y su posición (punto medio)."""
+    factors = np.ones(len(edges))
+    cls = edges["road_class"].to_numpy()
+    for c, f in profile.road_factors:
+        factors[cls == c] = f
+    u, v = edges["u"].to_numpy(), edges["v"].to_numpy()
+    x = (nodes["x"].to_numpy()[u] + nodes["x"].to_numpy()[v]) / 2
+    y = (nodes["y"].to_numpy()[u] + nodes["y"].to_numpy()[v]) / 2
+    cx, cy = to_metric(profile.city_center[1], profile.city_center[0])
+    d_center = np.hypot(x - cx, y - cy)
+    streets = cls >= 5
+    for radius, f in sorted(profile.urban_rings_m, reverse=True):
+        factors[streets & (d_center <= radius)] = f
+    ox, oy = to_metric(*origin_lonlat)
+    near = np.hypot(x - ox, y - oy) <= profile.near_origin_m
+    factors[near] = np.maximum(factors[near], profile.near_origin_factor)
+    return factors

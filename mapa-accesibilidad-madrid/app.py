@@ -55,19 +55,46 @@ def load_graphs():
     return wg, dg, reach, isochrones.IsochroneBuilder(wg, reach)
 
 
+@st.cache_resource(show_spinner="Aplicando el tráfico de hora punta a la red viaria...", max_entries=2)
+def rush_graph(lon: float, lat: float) -> graph.DriveGraph:
+    nodes = graph.load_nodes()
+    edges = pd.read_parquet(pipeline.processed("drive_edges.parquet"))
+    factors = drive.rush_hour_factors(edges, nodes, config.RUSH_HOUR, (lon, lat))
+    return graph.DriveGraph(nodes, edges.assign(speed_kmh=edges["speed_kmh"] / factors))
+
+
+def _traffic_summary() -> str:
+    p = config.RUSH_HOUR
+    names = {1: "M-30", 2: "M-40", 3: "M-50", 4: "otras autovías", 5: "vías principales", 6: "resto de calles"}
+    fmt = lambda f: f"×{f:.2f}".rstrip("0").rstrip(".").replace(".", ",")  # noqa: E731
+    parts = [f"{names[c]} {fmt(f)}" for c, f in p.road_factors]
+    rings = [f"calles a ≤{r / 1000:.0f} km de Sol {fmt(f)}" for r, f in sorted(p.urban_rings_m)]
+    parts += rings + [f"≤{p.near_origin_m / 1000:.0f} km del punto al menos {fmt(p.near_origin_factor)}"]
+    if p.fixed_minutes:
+        parts.append(f"+{p.fixed_minutes:.0f} min fijos")
+    return ", ".join(parts)
+
+
+def _drive_graph(lon: float, lat: float, rush: bool) -> graph.DriveGraph:
+    return rush_graph(lon, lat) if rush else load_graphs()[1]
+
+
 @st.cache_data(show_spinner="Calculando tiempos en coche...", max_entries=20)
-def drive_minutes(lon: float, lat: float, towards: bool) -> pd.Series:
-    _, dg, _, _ = load_graphs()
+def drive_minutes(lon: float, lat: float, towards: bool, rush: bool) -> pd.Series:
+    dg = _drive_graph(lon, lat, rush)
     stations = load_transit()[0]
     node_min = drive.drive_times(dg, lon, lat, config.SETTINGS.drive_max_minutes, towards)
-    return pd.Series(drive.station_drive_minutes(dg, stations, node_min), index=stations["station_id"].values)
+    extra = config.RUSH_HOUR.fixed_minutes if rush else 0.0
+    return pd.Series(drive.station_drive_minutes(dg, stations, node_min) + extra, index=stations["station_id"].values)
 
 
 @st.cache_data(show_spinner="Calculando el área alcanzable en coche...", max_entries=20)
-def drive_area_wkb(lon: float, lat: float, towards: bool, free_flow_minutes: float) -> bytes:
-    _, dg, _, _ = load_graphs()
+def drive_area_wkb(lon: float, lat: float, towards: bool, rush: bool, minutes: float) -> bytes:
+    """Área a ≤`minutes` en coche (ya dividido por el ajuste extra); incluye los minutos fijos de hora punta."""
+    dg = _drive_graph(lon, lat, rush)
     node_min = drive.drive_times(dg, lon, lat, config.SETTINGS.drive_max_minutes, towards)
-    area = drive.drive_area(dg, node_min, free_flow_minutes)
+    budget = minutes - (config.RUSH_HOUR.fixed_minutes if rush else 0.0)
+    area = drive.drive_area(dg, node_min, budget)
     return area.geometry.iloc[0].wkb if len(area) else b""
 
 
@@ -142,6 +169,7 @@ if "origin" not in st.session_state:
 origin_lat, origin_lon, origin_name = st.session_state.origin
 drive_limit = factor = None
 towards = False
+rush = False
 selected_munis: list[str] = []
 drive_bands_sel: list[int] = []
 if scope_kind == SCOPE_DRIVE:
@@ -154,20 +182,29 @@ if scope_kind == SCOPE_DRIVE:
                 st.session_state.origin = found
                 st.rerun()
             st.error("No se encontró la dirección.")
-        if st.button("Volver a la Ciudad Financiera"):
+        if st.button("Volver a CGS"):
             o = config.DEFAULT_ORIGIN
             st.session_state.origin = (o.lat, o.lon, o.name)
             st.rerun()
     drive_limit = sb.slider("Minutos en coche (máximo)", 5, config.SETTINGS.drive_max_minutes, config.DEFAULT_DRIVE_MINUTES, 5)
-    towards = sb.radio("Sentido del viaje", ["Desde el punto", "Hacia el punto"], horizontal=True) == "Hacia el punto"
-    drive_bands_sel = list(config.DEFAULT_DRIVE_BANDS)
+    towards = sb.radio("Sentido del viaje", ["Desde el punto", "Hacia el punto"], index=1, horizontal=True) == "Hacia el punto"
+    rush = (
+        sb.radio(
+            "Tráfico",
+            [config.RUSH_HOUR.label, "Sin tráfico"],
+            help="Hora punta: ralentización aproximada por tipo de vía y zona (M-30, M-40, calles del centro...) "
+            "calibrada a mano con Google Maps; no está medida con datos reales de tráfico.",
+        )
+        == config.RUSH_HOUR.label
+    )
+    drive_bands_sel = [b for b in config.DEFAULT_DRIVE_BANDS if b <= drive_limit]
     factor = sb.slider(
-        "Factor de tráfico",
+        "Ajuste extra de tiempos",
+        0.7,
+        1.5,
         1.0,
-        2.0,
-        1.0,
-        0.1,
-        help="Multiplica los tiempos en coche sin tráfico. 1,0 = flujo libre; 1,3-1,5 ≈ hora punta (estimación).",
+        0.05,
+        help="Multiplica los tiempos en coche calculados (para calibrar con Google Maps, por ejemplo).",
     )
 elif scope_kind == SCOPE_MUNIS:
     selected_munis = sb.multiselect("Municipios", munis["name"].tolist(), default=["Madrid"])
@@ -219,18 +256,18 @@ stations = stations_all[
     & ~stations_all["municipality"].isin(excluded_munis)
     & ~stations_all["name"].isin(excluded_stations)
 ].copy()
-dmin = drive_minutes(origin_lon, origin_lat, towards)
+dmin = drive_minutes(origin_lon, origin_lat, towards, rush)
 stations["drive_min"] = stations["station_id"].map(dmin) * (factor or 1.0)
 
 scope_gdf = None
 drive_band_gdfs: dict[int, gpd.GeoDataFrame] = {}
 if scope_kind == SCOPE_DRIVE:
     stations = stations[stations["drive_min"] <= drive_limit]
-    wkb = drive_area_wkb(origin_lon, origin_lat, towards, drive_limit / factor)
+    wkb = drive_area_wkb(origin_lon, origin_lat, towards, rush, drive_limit / factor)
     if wkb:
         scope_gdf = gpd.GeoDataFrame(geometry=[shapely.from_wkb(wkb)], crs=config.CRS_METRIC)
     for band_min in drive_bands_sel:
-        bw = drive_area_wkb(origin_lon, origin_lat, towards, band_min / factor)
+        bw = drive_area_wkb(origin_lon, origin_lat, towards, rush, band_min / factor)
         if bw:
             drive_band_gdfs[band_min] = gpd.GeoDataFrame(geometry=[shapely.from_wkb(bw)], crs=config.CRS_METRIC)
 elif scope_kind == SCOPE_CITY:
@@ -531,7 +568,9 @@ with tab_info:
 - *Círculo*: radio en línea recta = tiempo × velocidad (sobrestima el área real).
 - *Coche*: red viaria (filtro `drive` de OSMnx) con velocidades sin tráfico al estilo OSRM
   ({int(config.SETTINGS.drive_maxspeed_factor * 100)} % del límite señalizado, o valores típicos por tipo de vía)
-  y sentidos únicos. El factor de tráfico multiplica esos tiempos.
+  y sentidos únicos. En hora punta (8:30, aproximado) cada vía se ralentiza según su tipo y zona:
+  {_traffic_summary()}. Calibrado a mano con tiempos de Google Maps (Sol, Aravaca, Moncloa); no son datos de
+  tráfico medidos.
 
 **Limitaciones**
 - Los tiempos son estimaciones; no incluyen semáforos, esperas, pendientes ni el recorrido dentro de la estación.

@@ -72,7 +72,7 @@ def pretty_name(name: str) -> str:
     # El CRTM escribe algunos nombres como "Aguilas, las": se reordenan a "Las Aguilas".
     m = re.match(r"^(.*), (la|las|el|los)$", name, flags=re.IGNORECASE)
     if m:
-        name = f"{m.group(2).capitalize()} {m.group(1)}"
+        return f"{m.group(2).capitalize()} {pretty_name(m.group(1))}"
     if not name.isupper():
         return name
     words = []

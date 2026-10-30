@@ -13,6 +13,7 @@ import time
 
 import geopandas as gpd
 import pandas as pd
+import pyarrow.parquet as pq
 
 from . import config, download, drive, graph, isochrones, osm, transit
 
@@ -44,7 +45,10 @@ def step_transit(force: bool) -> None:
 
 def step_osm(force: bool) -> None:
     pbf = download.download_osm(force=force)
-    if not processed("walk_edges.parquet").exists() or force:
+    stale = (
+        processed("drive_edges.parquet").exists() and "road_class" not in pq.read_schema(processed("drive_edges.parquet")).names
+    )
+    if not processed("walk_edges.parquet").exists() or force or stale:
         osm.extract_networks(pbf, config.PROCESSED_DIR)
         _update_meta(osm_extract_mtime=time.strftime("%Y-%m-%d", time.localtime(pbf.stat().st_mtime)))
     if not processed(BOUNDARIES_FILE).exists() or force:

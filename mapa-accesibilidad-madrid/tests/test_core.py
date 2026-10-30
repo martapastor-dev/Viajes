@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from shapely.geometry import Point
 
-from accesibilidad import config, housing, isochrones, osm, transit
+from accesibilidad import config, drive, housing, isochrones, osm, transit
 from accesibilidad.graph import WalkGraph
 
 
@@ -20,6 +20,7 @@ def test_pretty_name():
     assert transit.pretty_name("ALFONSO XIII") == "Alfonso XIII"
     assert transit.pretty_name("PUERTA DE BOADILLA") == "Puerta de Boadilla"
     assert transit.pretty_name("Aguilas, las") == "Las Aguilas"
+    assert transit.pretty_name("ROZAS, LAS") == "Las Rozas"
 
 
 def test_expand_lines():
@@ -122,3 +123,29 @@ def test_experimental_score_bounds():
     s = housing.experimental_score(summary, max_minutes=10)
     assert 0 <= s.iloc[1] <= s.iloc[0] <= 100
     assert s.iloc[1] == 0
+
+
+def test_road_class():
+    assert osm.road_class({"highway": "motorway", "ref": "M-30"}) == osm.ROAD_M30
+    assert osm.road_class({"highway": "motorway_link", "ref": "A-6;M-40"}) == osm.ROAD_M40
+    assert osm.road_class({"highway": "trunk", "ref": "M-503"}) == osm.ROAD_HIGHWAY
+    assert osm.road_class({"highway": "secondary"}) == osm.ROAD_ARTERIAL
+    assert osm.road_class({"highway": "residential"}) == osm.ROAD_LOCAL
+
+
+def test_rush_hour_factors_by_zone():
+    from accesibilidad.graph import to_metric
+
+    p = config.RUSH_HOUR
+    pts = {"sol": p.city_center, "lejos": (40.60, -3.40), "origen": (config.DEFAULT_ORIGIN.lat, config.DEFAULT_ORIGIN.lon)}
+    xs, ys = zip(*(to_metric(lon, lat) for lat, lon in pts.values()), strict=True)
+    nodes = pd.DataFrame({"x": np.concatenate(xs), "y": np.concatenate(ys)})
+    edges = pd.DataFrame(
+        {"u": [0, 1, 1, 2], "v": [0, 1, 1, 2], "road_class": [osm.ROAD_LOCAL, osm.ROAD_LOCAL, osm.ROAD_M30, osm.ROAD_HIGHWAY]}
+    )
+    f = drive.rush_hour_factors(edges, nodes, p, (config.DEFAULT_ORIGIN.lon, config.DEFAULT_ORIGIN.lat))
+    road = dict(p.road_factors)
+    assert f[0] == max(f for _, f in p.urban_rings_m)
+    assert f[1] == road[osm.ROAD_LOCAL]
+    assert f[2] == road[osm.ROAD_M30]
+    assert f[3] == max(road[osm.ROAD_HIGHWAY], p.near_origin_factor)
