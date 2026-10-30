@@ -238,3 +238,22 @@ def extract_boundaries(pbf: Path, out_path: Path) -> gpd.GeoDataFrame:
     gdf.to_file(out_path, driver="GeoJSON")
     log.info("Límites: %d municipios", int((gdf.admin_level == 8).sum()))
     return gdf
+
+
+PLACE_KINDS = ("suburb", "quarter", "neighbourhood")
+
+
+def extract_places(pbf: Path, out_path: Path) -> gpd.GeoDataFrame:
+    """Extrae los nombres de barrios (nodos place=suburb/quarter/neighbourhood) para etiquetar el mapa."""
+    rows = []
+    tag_filter = osmium.filter.TagFilter(*(("place", k) for k in PLACE_KINDS))
+    fp = osmium.FileProcessor(str(pbf), osmium.osm.NODE).with_filter(tag_filter)
+    for n in fp:
+        name = n.tags.get("name")
+        if name:
+            rows.append({"name": name, "place": n.tags.get("place"), "lon": n.location.lon, "lat": n.location.lat})
+    df = pd.DataFrame(rows, columns=["name", "place", "lon", "lat"])
+    gdf = gpd.GeoDataFrame(df[["name", "place"]], geometry=gpd.points_from_xy(df.lon, df.lat), crs=config.CRS_WGS84)
+    gdf.to_parquet(out_path)
+    log.info("Barrios: %d nombres", len(gdf))
+    return gdf

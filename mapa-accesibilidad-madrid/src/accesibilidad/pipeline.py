@@ -22,6 +22,7 @@ STATIONS_FILE = "stations.parquet"
 ACCESS_FILE = "access.parquet"
 LINES_FILE = "lines.parquet"
 BOUNDARIES_FILE = "boundaries.geojson"
+PLACES_FILE = "places.parquet"
 META_FILE = "meta.json"
 # Estaciones fuera de la Comunidad (Cercanías llega a Ávila, Segovia...) solo se procesan si están cerca.
 REGION_MARGIN_M = 1000
@@ -48,6 +49,8 @@ def step_osm(force: bool) -> None:
         _update_meta(osm_extract_mtime=time.strftime("%Y-%m-%d", time.localtime(pbf.stat().st_mtime)))
     if not processed(BOUNDARIES_FILE).exists() or force:
         osm.extract_boundaries(pbf, processed(BOUNDARIES_FILE))
+    if not processed(PLACES_FILE).exists() or force:
+        osm.extract_places(pbf, processed(PLACES_FILE))
 
 
 def step_assign_municipalities() -> gpd.GeoDataFrame:

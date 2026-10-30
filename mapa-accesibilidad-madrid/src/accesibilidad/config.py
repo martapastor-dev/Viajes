@@ -101,7 +101,7 @@ DEFAULT_ORIGIN = Origin("CGS (Ciudad Financiera Banco Santander)", 40.3930154, -
 # Bandas del ámbito en coche al punto de referencia por defecto, en minutos.
 DEFAULT_DRIVE_BANDS = (20, 30)
 DEFAULT_DRIVE_MINUTES = 30
-DEFAULT_EXCLUDED_MUNICIPALITIES = ["Alcorcón", "Móstoles"]
+DEFAULT_EXCLUDED_MUNICIPALITIES = ["Alcorcón", "Getafe", "Leganés", "Móstoles"]
 DEFAULT_EXCLUDED_STATIONS = ["La Fortuna"]
 
 

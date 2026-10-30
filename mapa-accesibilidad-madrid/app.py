@@ -39,7 +39,9 @@ def load_transit():
     access = gpd.read_parquet(pipeline.processed(pipeline.ACCESS_FILE))
     lines = gpd.read_parquet(pipeline.processed(pipeline.LINES_FILE))
     bounds = gpd.read_file(pipeline.processed(pipeline.BOUNDARIES_FILE))
-    return stations, access, lines, bounds, pipeline.load_meta()
+    places_path = pipeline.processed(pipeline.PLACES_FILE)
+    places = gpd.read_parquet(places_path) if places_path.exists() else None
+    return stations, access, lines, bounds, places, pipeline.load_meta()
 
 
 @st.cache_resource(show_spinner="Cargando la red peatonal y viaria (solo la primera vez)...")
@@ -119,7 +121,7 @@ if not pipeline.is_ready():
         st.rerun()
     st.stop()
 
-stations_all, access_all, lines_all, bounds, meta = load_transit()
+stations_all, access_all, lines_all, bounds, places_all, meta = load_transit()
 wg, dg, reach, builder = load_graphs()
 munis = bounds[bounds.admin_level == 8].sort_values("name")
 region = bounds[bounds.admin_level == 4]
@@ -421,6 +423,10 @@ with tab_map:
         mapping.add_scope(m, scope_gdf, scope_label, color="#d62728" if scope_kind == SCOPE_DRIVE else "#555555")
     else:
         mapping.add_drive_bands(m, drive_band_gdfs, "CGS")
+    if places_all is not None:
+        area = scope_gdf if scope_gdf is not None else region
+        zone = area.to_crs(config.CRS_WGS84).geometry.union_all()
+        mapping.add_neighbourhoods(m, places_all[places_all.within(zone)])
     mapping.add_lines(m, lines_shown)
     label = "Andando" if area_kind == AREA_ISO else "Círculo"
     mapping.add_isochrones(m, polys, stations, individual=len(stations) <= MAX_INDIVIDUAL_POLYGONS, label=label)

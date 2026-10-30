@@ -6,6 +6,7 @@ import html
 
 import folium
 import geopandas as gpd
+import jinja2
 from folium.plugins import Draw, Fullscreen, MeasureControl
 
 from . import config
@@ -167,6 +168,63 @@ def add_stations(m: folium.Map, stations: gpd.GeoDataFrame, access: gpd.GeoDataF
                 tooltip=row["name"],
             ).add_to(fa)
         fa.add_to(m)
+
+
+PLACE_RANK = {"suburb": 0, "quarter": 1, "neighbourhood": 2}
+# Zoom mínimo al que se muestra cada tipo de barrio, para no saturar el mapa.
+PLACE_MIN_ZOOM = {"suburb": 11, "quarter": 12, "neighbourhood": 13}
+
+
+class _ZoomLabels(folium.MacroElement):
+    """Oculta las etiquetas de barrio por debajo de su zoom mínimo (va dentro del mapa para que st_folium lo ejecute)."""
+
+    _template = jinja2.Template(
+        """
+        {% macro header(this, kwargs) %}
+        <style>
+        .barrio-lbl {font: 600 11px/1.1 system-ui, sans-serif; color: #3b3b3b; white-space: nowrap;
+          transform: translate(-50%, -50%); width: max-content; pointer-events: none;
+          text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;}
+        .barrio-suburb {font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #555;}
+        </style>
+        {% endmacro %}
+        {% macro script(this, kwargs) %}
+        (function() {
+          var map = {{ this._parent.get_name() }};
+          function upd() {
+            var z = map.getZoom();
+            map.getContainer().querySelectorAll('.barrio-lbl').forEach(function(el) {
+              el.style.display = z >= +el.dataset.minzoom ? '' : 'none';
+            });
+          }
+          map.on('zoomend layeradd', function() { setTimeout(upd, 0); });
+          map.whenReady(function() { setTimeout(upd, 0); });
+        })();
+        {% endmacro %}
+        """
+    )
+
+
+def add_neighbourhoods(m: folium.Map, places: gpd.GeoDataFrame) -> None:
+    """Etiquetas de texto con los nombres de barrio; las menores aparecen al acercar el zoom."""
+    if places is None or places.empty:
+        return
+    places = places.assign(_rank=places["place"].map(PLACE_RANK)).sort_values("_rank")
+    places = places.drop_duplicates("name")
+    fg = folium.FeatureGroup(name="Nombres de barrios", show=True)
+    for _, row in places.iterrows():
+        kind = row["place"]
+        folium.Marker(
+            (row.geometry.y, row.geometry.x),
+            icon=folium.DivIcon(
+                html=f'<div class="barrio-lbl barrio-{kind}" data-minzoom="{PLACE_MIN_ZOOM.get(kind, 13)}">'
+                f"{html.escape(row['name'])}</div>",
+                icon_size=(0, 0),
+            ),
+            interactive=False,
+        ).add_to(fg)
+    fg.add_to(m)
+    _ZoomLabels().add_to(m)
 
 
 def add_origin(m: folium.Map, lat: float, lon: float, name: str) -> None:
