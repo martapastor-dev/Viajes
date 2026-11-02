@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa de Accesibilidad</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3.2.4/dist/d3-array.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-contour@4.0.2/dist/d3-contour.min.js"></script>
+<script src="datos_tp.js"></script>
+<script src="metro_sombra.js"></script>
+<script src="metro_lineas.js"></script>
+<!-- walk_real.js y walk_minutes.js generados por exportar_walk_real.py (opcionales) -->
+<script>var WALK_REAL=null,WALK_MINUTES=null,WALK_POLYS=null;</script>
+<script src="walk_real.js" onerror="console.warn('walk_real.js no encontrado — se usará haversine')"></script>
+<script src="walk_minutes.js" onerror="console.warn('walk_minutes.js no encontrado — se usarán polígonos estáticos')"></script>
+<script src="walk_polys.js" onerror="console.warn('walk_polys.js no encontrado — TP usará rejilla haversine')"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:13px;overflow:hidden}
+#map{width:100vw;height:100vh}
+
+/* ── Panel flotante ─────────────────────────────────── */
+#panel{
+  position:fixed;top:10px;right:10px;width:310px;
+  max-height:calc(100vh - 20px);
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 18px rgba(0,0,0,.24);
+  z-index:1000;
+  display:flex;flex-direction:column;
+  overflow:hidden; /* el scroll va en #pts-scroll */
+}
+#panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px 9px;
+  background:#1a3a5c;color:#fff;border-radius:10px 10px 0 0;
+  font-weight:700;font-size:14px;flex-shrink:0;
+}
+#panel-header button{
+  background:none;border:none;color:#fff;font-size:17px;
+  cursor:pointer;padding:0 3px;line-height:1;
+}
+
+/* ── Panel: tres zonas ───────────────────────────────── */
+#panel-top{
+  padding:10px 12px 0;flex-shrink:0;
+  overflow-y:auto;
+}
+#pts-scroll{
+  flex:1;min-height:0;overflow-y:auto;
+  padding:0 12px;
+}
+#panel-bottom{
+  flex-shrink:0;padding:8px 12px 12px;
+  border-top:1px solid #e8eaed;background:#fff;
+  border-radius:0 0 10px 10px;
+}
+
+/* ── Cabeceras de sección ─────────────────────────────── */
+.sec-title{
+  font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:#888;margin:10px 0 6px;border-top:1px solid #eee;padding-top:8px;
+}
+.sec-title:first-child{border-top:none;padding-top:0;margin-top:0}
+.sec-row{display:flex;align-items:baseline;justify-content:space-between}
+.sec-clear{
+  font-size:11px;color:#ef4444;background:none;border:none;
+  cursor:pointer;padding:0;text-decoration:none;
+}
+.sec-clear:hover{text-decoration:underline}
+
+/* ── Formulario añadir ───────────────────────────────── */
+#add-input{
+  width:100%;padding:7px 9px;border:1px solid #ccc;border-radius:7px;
+  font-size:13px;outline:none;
+}
+#add-input:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.15)}
+.type-row{display:flex;gap:5px;margin-top:6px}
+.type-btn{
+  flex:1;padding:5px 4px;border:1px solid #ddd;border-radius:6px;
+  background:#f8f8f8;cursor:pointer;font-size:12px;text-align:center;
+}
+.type-btn.sel{background:#7c3aed;color:#fff;border-color:#7c3aed}
+.add-actions{display:flex;gap:6px;margin-top:7px;margin-bottom:6px}
+.btn-add{
+  flex:1;padding:7px 6px;border:none;border-radius:7px;cursor:pointer;
+  font-size:12.5px;font-weight:600;
+}
+.btn-add.geo{background:#3b82f6;color:#fff}
+.btn-add.geo:hover{background:#2563eb}
+.btn-add.geo:disabled{opacity:.5;cursor:not-allowed}
+.btn-add.click{background:#f1f5f9;color:#334155;border:1px solid #cbd5e1}
+.btn-add.click:hover{background:#e2e8f0}
+.btn-add.click.active{background:#f59e0b;color:#fff;border-color:#f59e0b}
+
+/* ── Tarjetas de punto ───────────────────────────────── */
+.pt-card{
+  border:1px solid #e2e8f0;border-radius:9px;
+  padding:9px 10px 8px;margin-bottom:8px;
+  position:relative;
+}
+.pt-card.loading{border-color:#93c5fd}
+.pt-card.loading .pt-bar{
+  display:block;
+}
+.pt-bar{
+  display:none;position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#3b82f6,#60a5fa,#3b82f6);
+  background-size:200%;animation:bar 1.1s infinite;border-radius:9px 9px 0 0;
+}
+@keyframes bar{0%{background-position:100%}100%{background-position:-100%}}
+
+/* Fila 1: nombre + eliminar */
+.pt-r1{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.pt-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.pt-name{flex:1;font-weight:600;font-size:13px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-badge{
+  font-size:10px;padding:1px 6px;border-radius:10px;flex-shrink:0;
+  background:#dbeafe;color:#1d4ed8;
+}
+.pt-badge.tp{background:#ede9fe;color:#6d28d9}
+.btn-del{
+  padding:3px 7px;border:1px solid #fca5a5;border-radius:5px;
+  background:#fff5f5;color:#ef4444;cursor:pointer;font-size:11.5px;
+  font-weight:600;flex-shrink:0;white-space:nowrap;
+}
+.btn-del:hover{background:#fee2e2}
+
+/* Fila 2: modo + minutos (solo referencias) */
+.pt-r2{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.pt-mode{
+  flex:1;min-width:0;padding:5px 6px;border:1px solid #ddd;border-radius:6px;
+  font-size:12px;background:#fff;cursor:pointer;
+}
+.pt-min-wrap{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.pt-min{
+  width:46px;padding:5px 5px;border:1px solid #ddd;border-radius:6px;
+  font-size:12px;text-align:center;
+}
+.pt-min-lbl{font-size:11px;color:#94a3b8;flex-shrink:0}
+.btn-retry{
+  padding:4px 6px;border:1px solid #ddd;border-radius:5px;
+  background:#f8fafc;cursor:pointer;font-size:13px;
+  flex-shrink:0;color:#64748b;
+}
+.btn-retry:hover{background:#f1f5f9;border-color:#94a3b8}
+.btn-retry:disabled{opacity:.4;cursor:not-allowed}
+
+/* Fila 3: toggle visible + estado */
+.pt-r3{display:flex;align-items:center;gap:6px}
+.btn-vis{
+  padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;
+  font-weight:600;border:1px solid;flex-shrink:0;
+}
+.btn-vis.on{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd}
+.btn-vis.on:hover{background:#bfdbfe}
+.btn-vis.off{background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0}
+.btn-vis.off:hover{background:#e2e8f0}
+.pt-status{flex:1;font-size:11px;color:#64748b;min-width:0}
+.pt-err{color:#ef4444}
+
+/* ── Metro checkboxes ────────────────────────────────── */
+.metro-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px}
+.metro-lbl{
+  display:flex;align-items:center;gap:4px;cursor:pointer;
+  user-select:none;font-size:12.5px;
+}
+.swatch{width:11px;height:11px;border-radius:2px;display:inline-block;flex-shrink:0}
+
+/* ── Toggle hora punta ───────────────────────────────── */
+#btn-peak{
+  width:100%;padding:8px 12px;margin-top:6px;
+  border:1.5px solid #e2e8f0;border-radius:7px;
+  background:#f8fafc;color:#475569;
+  font-size:12.5px;cursor:pointer;text-align:left;
+}
+#btn-peak:hover{background:#f1f5f9}
+#btn-peak.on{border-color:#dc2626;background:#fef2f2;color:#b91c1c;font-weight:700}
+#btn-peak.on:hover{background:#fee2e2}
+#peak-note{font-size:10.5px;color:#94a3b8;display:block;margin-top:3px;padding:0 2px}
+
+/* ── Botón intersección ──────────────────────────────── */
+#btn-inter{
+  width:100%;padding:9px 12px;margin-top:6px;
+  border:1.5px solid #7c3aed;border-radius:7px;
+  background:#fff;color:#7c3aed;
+  font-weight:700;font-size:13px;cursor:pointer;
+}
+#btn-inter:hover{background:#f5f3ff}
+#btn-inter.on{background:#7c3aed;color:#fff}
+#btn-inter.on:hover{background:#6d28d9}
+
+/* ── Plantillas + Idealista ──────────────────────────── */
+.tpl-row{display:flex;gap:6px;margin-top:6px}
+.tpl-row button,.tpl-row select{
+  flex:1;padding:7px 8px;border:1.5px solid #cbd5e1;border-radius:7px;
+  background:#fff;color:#334155;font-weight:600;font-size:12px;cursor:pointer;
+  min-width:0;
+}
+.tpl-row button:hover{background:#f8fafc}
+.tpl-row select{flex:2}
+#btn-tpl-del{flex:0 0 34px}
+#btn-ideal-venta,#btn-ideal-alq{border-color:#e07b39;color:#b45309}
+#btn-ideal-venta:hover,#btn-ideal-alq:hover{background:#fff7ed}
+
+/* ── Toast ───────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#1e293b;color:#fff;padding:9px 18px;border-radius:8px;
+  font-size:13px;z-index:9000;opacity:0;transition:opacity .25s;
+  pointer-events:none;max-width:320px;text-align:center;
+}
+#toast.show{opacity:1}
+
+/* ── Barra estado global ─────────────────────────────── */
+#gstatus{
+  position:fixed;bottom:10px;right:322px;z-index:999;
+  font-size:12px;background:#ffffffdd;padding:4px 10px;border-radius:6px;
+  box-shadow:0 1px 4px rgba(0,0,0,.15);display:none;color:#334155;
+}
+
+body.click-mode #map{cursor:crosshair}
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<div id="panel">
+  <div id="panel-header">
+    <span>🗺 Accesibilidad</span>
+    <button id="btn-collapse" title="Minimizar/expandir">−</button>
+  </div>
+
+  <!-- ── Zona superior: formulario + lista puntos (scrollable) ── -->
+  <div id="panel-top">
+    <div class="sec-title">Añadir punto</div>
+    <input type="text" id="add-input" placeholder="Dirección o link de Google Maps…">
+
+    <!-- Tipo con descripción contextual -->
+    <div class="type-row">
+      <button class="type-btn sel" data-type="reference" id="tbtn-ref">
+        🏁 Destino
+      </button>
+      <button class="type-btn" data-type="transport" id="tbtn-tp">
+        � Punto de recogida
+      </button>
+    </div>
+    <div id="type-hint" style="font-size:11px;color:#64748b;margin:5px 2px 0;line-height:1.45">
+      Marca el lugar al que quieres llegar. La zona sombreada
+      mostrará desde dónde puedes salir para llegar ahí a tiempo.
+    </div>
+
+    <div class="add-actions">
+      <button class="btn-add geo" id="btn-add-geo">🔍 Buscar y añadir</button>
+      <button class="btn-add click" id="btn-add-click">🖱 Clic en mapa</button>
+    </div>
+
+    <!-- Mini-guía para modo TP+Coche -->
+    <div id="car-guide" style="display:none;background:#f0fdf4;border:1px solid #86efac;
+         border-radius:7px;padding:7px 10px;font-size:11px;color:#166534;line-height:1.5;margin-top:4px">
+      <b>Cómo usar el coche de un punto de recogida:</b><br>
+      1. Añade el destino final como <b>🏁 Destino</b><br>
+      2. En el Destino, selecciona modo
+         <b>🚇+🚗 hasta [nombre recogida]</b><br>
+      → El sombreado mostrará desde dónde llegas al destino
+      sumando metro/andando al coche y el coche al destino.
+    </div>
+
+    <div class="sec-row">
+      <div class="sec-title" style="margin-bottom:4px">Puntos añadidos</div>
+      <button class="sec-clear" id="btn-clear-all" style="display:none"
+        onclick="clearAllPoints()">Eliminar todo</button>
+    </div>
+  </div>
+
+  <!-- ── Zona central: lista scrollable ── -->
+  <div id="pts-scroll">
+    <div id="points-list"></div>
+  </div>
+
+  <!-- ── Zona inferior: capas base + intersección (siempre visible) ── -->
+  <div id="panel-bottom">
+    <div class="sec-title" style="margin-top:0">Capas base</div>
+    <div class="metro-row">
+      <label class="metro-lbl">
+        <input type="checkbox" id="mc-lineas" checked>
+        <span class="swatch" style="background:#555"></span>Líneas
+      </label>
+      <label class="metro-lbl">
+        <input type="checkbox" id="mc-stations" checked>
+        <span class="swatch" style="background:#555;border-radius:50%"></span>Paradas
+      </label>
+    </div>
+    <div class="metro-row" style="margin-top:5px;align-items:center;flex-wrap:wrap;gap:4px">
+      <label class="metro-lbl" style="flex:0 0 auto">
+        <input type="checkbox" id="mc-walk" checked>
+        <span class="swatch" id="swatch-walk" style="background:#1a9850"></span>
+        Andando a metro:
+      </label>
+      <input type="range" id="walk-slider" min="1" max="20" value="10"
+             style="flex:1;min-width:60px;cursor:pointer;accent-color:#1a9850">
+      <span id="walk-label" style="font-size:12px;font-weight:600;color:#555;min-width:36px">≤10 min</span>
+    </div>
+    <button id="btn-peak" onclick="togglePeak()">🚦 Coche: libre circulación</button>
+    <span id="peak-note">Valhalla sin tráfico real; factor ×1.2 se aplica al coche</span>
+    <button id="btn-inter">∩ Intersección de capas activas</button>
+    <div class="tpl-row">
+      <button id="btn-tpl-save" title="Guardar los puntos actuales como plantilla">💾 Plantilla</button>
+      <select id="tpl-select" title="Cargar una plantilla guardada">
+        <option value="">📂 Mis plantillas…</option>
+      </select>
+      <button id="btn-tpl-del" title="Eliminar la plantilla seleccionada">🗑</button>
+    </div>
+    <div class="tpl-row">
+      <button id="btn-ideal-venta" title="Abrir idealista (venta) con la zona dibujada">🏠 Idealista: venta</button>
+      <button id="btn-ideal-alq" title="Abrir idealista (alquiler) con la zona dibujada">🏠 alquiler</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="gstatus">⌛ Calculando…</div>
+
+<script>
+'use strict';
+
+// ── 0. Guardia ──────────────────────────────────────────────────────────────
+if (typeof GRAFO_TP === 'undefined' || typeof METRO_SOMBRA === 'undefined') {
+  document.getElementById('panel-top').innerHTML =
+    '<div style="color:#ef4444;padding:12px 0;font-size:13px;line-height:1.6">' +
+    '<b>⚠ Datos no encontrados</b><br>' +
+    'Ejecuta primero:<br>' +
+    '<code>python exportar_datos_dinamico.py</code><br>' +
+    'y abre con un servidor local.' +
+    '</div>';
+  throw new Error('GRAFO_TP no cargado');
+}
+
+// ── 1. Grafo GTFS ───────────────────────────────────────────────────────────
+const { p:GP, sk:SK, rk:RK, sd:SD, e:EDGES, te:XFER, w:WAIT_ARR, r:RNAME_ARR } = GRAFO_TP;
+
+const STATIONS = {};
+const SKIDX = {};
+SK.forEach((k,i) => { STATIONS[k] = { lat:SD[i][0], lon:SD[i][1], name:SD[i][2] }; SKIDX[k]=i; });
+
+const WAIT = {}, RNAME = {};
+RK.forEach((rk,i) => { WAIT[rk]=WAIT_ARR[i]; RNAME[rk]=RNAME_ARR[i]; });
+
+// Grafo inverso
+const ADJ = {};
+EDGES.forEach(([uI,vI,t,rkI]) => {
+  const v=SK[vI], u=SK[uI], rk=RK[rkI];
+  if (!ADJ[v]) ADJ[v]=[];
+  ADJ[v].push([u,t,rk]);
+});
+XFER.forEach(([aI,bI,w]) => {
+  const b=SK[bI], a=SK[aI];
+  if (!ADJ[b]) ADJ[b]=[];
+  ADJ[b].push([a,w,'WALK']);
+});
+
+// ── 2. Utilidades ───────────────────────────────────────────────────────────
+function haversineKm(la1,lo1,la2,lo2) {
+  const R=6371, dp=(la2-la1)*Math.PI/180, dl=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dp/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dl/2)**2;
+  return 2*R*Math.asin(Math.sqrt(Math.max(0,a)));
+}
+function walkMin(la1,lo1,la2,lo2) {
+  return haversineKm(la1,lo1,la2,lo2)*GP.DET/GP.SPD*60;
+}
+
+function parseGMapsURL(text) {
+  let m;
+  m=text.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/); if(m) return {lat:+m[1],lon:+m[2]};
+  m=text.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/); if(m) return {lat:+m[1],lon:+m[2]};
+  m=text.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/); if(m) return {lat:+m[1],lon:+m[2]};
+  return null;
+}
+
+async function geocode(query) {
+  try {
+    const r=await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&countrycodes=es&limit=1`,
+      {headers:{'User-Agent':'HestiaMap/1.0'}}
+    );
+    const d=await r.json();
+    if (!d.length) return null;
+    return {lat:+d[0].lat, lon:+d[0].lon, name:d[0].display_name.split(',')[0]};
+  } catch { return null; }
+}
+
+// ── 3. Min-Heap ─────────────────────────────────────────────────────────────
+class MinHeap {
+  constructor(){this.d=[]}
+  get size(){return this.d.length}
+  push(x){this.d.push(x);this._up(this.d.length-1)}
+  pop(){const r=this.d[0],l=this.d.pop();if(this.d.length){this.d[0]=l;this._dn(0)}return r}
+  _up(i){while(i>0){const p=(i-1)>>1;if(this.d[p][0]<=this.d[i][0])break;[this.d[p],this.d[i]]=[this.d[i],this.d[p]];i=p}}
+  _dn(i){const n=this.d.length;for(;;){let m=i,l=2*i+1,r=2*i+2;if(l<n&&this.d[l][0]<this.d[m][0])m=l;if(r<n&&this.d[r][0]<this.d[m][0])m=r;if(m===i)break;[this.d[m],this.d[i]]=[this.d[i],this.d[m]];i=m}}
+}
+
+// ── 4. Dijkstra TP ──────────────────────────────────────────────────────────
+function computeTP(destLat, destLon) {
+  const INF=Infinity, dist={}, pq=new MinHeap();
+  for (const [key,sta] of Object.entries(STATIONS)) {
+    const w=walkMin(sta.lat,sta.lon,destLat,destLon);
+    if (w<60) { dist[key+'|null']=w; pq.push([w,key,null]); }
+  }
+  while (pq.size>0) {
+    const [d,v,rout]=pq.pop();
+    const vk=v+'|'+rout;
+    if (d>(dist[vk]??INF)) continue;
+    for (const [u,t,rk] of (ADJ[v]||[])) {
+      let extra=t;
+      if (rout!==null&&rk!==rout) {
+        extra+=WAIT[rout]??3;
+        if (rk!=='WALK'&&rout!=='WALK') extra+=GP.XFER;
+      }
+      const nd=d+extra, uk=u+'|'+rk;
+      if (nd<(dist[uk]??INF)) { dist[uk]=nd; pq.push([nd,u,rk]); }
+    }
+  }
+  const T={};
+  for (const [sk2,d] of Object.entries(dist)) {
+    const pi=sk2.lastIndexOf('|'), s=sk2.slice(0,pi), rk=sk2.slice(pi+1);
+    const t=rk==='null'?d:d+(WAIT[rk]??3)+GP.ACC;
+    if (t<(T[s]??INF)) T[s]=t;
+  }
+  for (const s in T) T[s]*=GP.F;
+  return T;
+}
+
+// ── 5. Rejilla ──────────────────────────────────────────────────────────────
+function buildGrid(T, destLat, destLon) {
+  const dlat=GP.STEP, dlon=GP.STEP/Math.cos(GP.LA0*Math.PI/180);
+  const lats=[], lons=[];
+  for (let la=GP.LA0;la<GP.LA1;la+=dlat) lats.push(la);
+  for (let lo=GP.LO0;lo<GP.LO1;lo+=dlon) lons.push(lo);
+  const nR=lats.length, nC=lons.length;
+
+  const sk2=Object.keys(T), nS=sk2.length;
+  const sLat=new Float32Array(nS), sLon=new Float32Array(nS);
+  const sT=new Float32Array(nS), sCos=new Float32Array(nS), sLaR=new Float32Array(nS);
+  for(let i=0;i<nS;i++){
+    const st=STATIONS[sk2[i]];
+    sLat[i]=st.lat;sLon[i]=st.lon;sT[i]=T[sk2[i]];
+    sLaR[i]=st.lat*Math.PI/180;sCos[i]=Math.cos(sLaR[i]);
+  }
+  // Mapa sk_key → índice en GRAFO_TP (para lookup en WALK_REAL)
+  const useWalkReal = WALK_REAL && WALK_REAL.nR===nR && WALK_REAL.nC===nC;
+  const sk2sIdx = {};  // sk_key → sk2 array index (índice en T)
+  for(let i=0;i<nS;i++) sk2sIdx[sk2[i]]=i;
+  // covered[s]=1 si la estación s tiene isócrona real (WALK_REAL.cov = índices globales en SK)
+  const covered=new Uint8Array(nS);
+  if(useWalkReal && WALK_REAL.cov){
+    for(const g of WALK_REAL.cov){ const i=sk2sIdx[SK[g]]; if(i!==undefined) covered[i]=1; }
+  }
+
+  const K=2*6371*GP.DET/GP.SPD*60;
+  const grid=new Float32Array(nR*nC).fill(120);
+  for(let r=0;r<nR;r++){
+    const lat=lats[r], laR=lat*Math.PI/180, cosLa=Math.cos(laR);
+    for(let c=0;c<nC;c++){
+      const lon=lons[c], loR=lon*Math.PI/180;
+      let minT=walkMin(lat,lon,destLat,destLon);
+      const ci=r*nC+c;
+
+      if(useWalkReal){
+        // Usar tiempos de andar reales (Valhalla) por estación
+        const pairs=WALK_REAL.cells[ci];
+        for(let p=0;p<pairs.length;p+=2){
+          const sGlobal=pairs[p], wMin=pairs[p+1];
+          // sGlobal es índice en sk_list (GRAFO_TP.sk); buscar en sk2 (T)
+          const skKey=SK[sGlobal];
+          const sIdx=sk2sIdx[skKey];
+          if(sIdx===undefined) continue;
+          const tot=wMin+sT[sIdx]; if(tot<minT) minT=tot;
+        }
+        // Proxy haversine solo para estaciones sin isócrona real
+        for(let s=0;s<nS;s++){
+          if(covered[s]) continue;
+          const dlh=(laR-sLaR[s])/2,dloh=(loR-sLon[s]*Math.PI/180)/2;
+          const a=Math.sin(dlh)**2+cosLa*sCos[s]*Math.sin(dloh)**2;
+          const w=K*Math.asin(Math.sqrt(Math.max(0,a)));
+          const tot=w+sT[s]; if(tot<minT) minT=tot;
+        }
+      } else {
+        // Haversine (sin WALK_REAL)
+        for(let s=0;s<nS;s++){
+          const dlh=(laR-sLaR[s])/2,dloh=(loR-sLon[s]*Math.PI/180)/2;
+          const a=Math.sin(dlh)**2+cosLa*sCos[s]*Math.sin(dloh)**2;
+          const w=K*Math.asin(Math.sqrt(Math.max(0,a)));
+          const tot=w+sT[s]; if(tot<minT) minT=tot;
+        }
+      }
+      grid[ci]=minT;
+    }
+  }
+  return {grid,nR,nC,lats,lons};
+}
+
+// ── 6. Extracción de isócrona ───────────────────────────────────────────────
+function extractIsochrone(gd, threshold) {
+  const {grid,nR,nC,lats,lons}=gd;
+  const neg=new Float64Array(nR*nC);
+  for(let i=0;i<neg.length;i++) neg[i]=-grid[i];
+  const cfn=d3.contours().size([nC,nR]).thresholds([-threshold]);
+  const cs=cfn(neg);
+  if(!cs.length||!cs[0].coordinates.length) return null;
+  const lsLon=lons.length>1?lons[1]-lons[0]:GP.STEP/Math.cos(GP.LA0*Math.PI/180);
+  const lsLat=lats.length>1?lats[1]-lats[0]:GP.STEP;
+  const lo0=lons[0], la0=lats[0];
+  const c=cs[0];
+  return {
+    type:'Feature',
+    geometry:{
+      type:'MultiPolygon',
+      coordinates:c.coordinates.map(poly=>poly.map(ring=>ring.map(([x,y])=>[lo0+x*lsLon,la0+y*lsLat])))
+    },
+    properties:{threshold}
+  };
+}
+
+// ── 6b. Unión de polígonos reales (walk_polys.js) ────────────────────────────
+// Círculo aproximado del proxy haversine (radio en km) como polygon coords
+function circlePoly(lat,lon,rKm){
+  const ring=[], dLat=rKm/111.32, dLon=rKm/(111.32*Math.cos(lat*Math.PI/180));
+  for(let a=0;a<64;a++){
+    const t=a/64*2*Math.PI;
+    ring.push([lon-Math.sin(t)*dLon,lat+Math.cos(t)*dLat]);  // CCW: winding +1 en nonzero
+  }
+  ring.push(ring[0]);
+  return [ring];
+}
+
+// Sombreado TP = unión de isócronas reales: por cada estación s, su polígono de
+// (minutes − T[s]) minutos andando. Sin caché → círculo proxy (SPD/DET).
+// + círculo de andar directo al destino. Mismo modelo que buildGrid, sin rejilla.
+function buildTPFeature(T,destLat,destLon,minutes){
+  const polys=[];
+  const rW=m=>m*GP.SPD/(GP.DET*60);   // km alcanzables andando en m min
+  if(minutes>0) polys.push(circlePoly(destLat,destLon,rW(minutes)*0.85));  // directo: −15 % (detour ~1,55)
+  const useP=WALK_POLYS&&typeof WALK_POLYS==='object';
+  for(const skKey in T){
+    const rem=minutes-T[skKey];
+    if(rem<1) continue;
+    const g=SKIDX[skKey], st=STATIONS[skKey];
+    let done=false;
+    if(useP&&g!==undefined){
+      const d=WALK_POLYS[g];
+      if(d){
+        for(let k=Math.min(20,Math.floor(rem));k>=1;k--){
+          const pc=d[k];
+          if(pc){for(const poly of pc) polys.push(poly);done=true;break;}
+        }
+      }
+    }
+    if(!done&&st) polys.push(circlePoly(st.lat,st.lon,rW(rem)));
+  }
+  if(!polys.length) return null;
+  return {type:'Feature',_union:true,
+          geometry:{type:'MultiPolygon',coordinates:polys},
+          properties:{threshold:minutes}};
+}
+
+// ── 7. Valhalla ─────────────────────────────────────────────────────────────
+const VALHALLA='https://valhalla1.openstreetmap.de';
+const COSTING={car:'auto', walk:'pedestrian', bike:'bicycle'};
+
+// ── Factor hora punta (Madrid: ~+40 % sobre libre circulación) ──────────────
+// Fuente de referencia: TomTom Traffic Index 2023 Madrid, media mañana/tarde punta.
+// En libre circulación el factor es 1.0; activándolo se reduce el área de isócrona
+// (se piden menos minutos de free-flow a Valhalla para representar lo que realmente
+// se alcanza en X minutos con tráfico) y se escala el tiempo de ruta en modo custom.
+let peakHour = false;
+const PEAK_FACTOR = 1.2;  // punta típica: viaje en coche tarda ~20 % más
+
+async function fetchValhalla(lat, lon, minutes, costing) {
+  // Para coche en hora punta: pedimos menos minutos de free-flow a Valhalla
+  // de forma que el área resultante represente lo alcanzable con tráfico.
+  // Ej: 30 min con tráfico ×1.4 → pedimos 30/1.4 ≈ 21 min free-flow a Valhalla.
+  const reqMins = (peakHour && costing==='auto')
+    ? Math.round(minutes / PEAK_FACTOR * 10) / 10
+    : minutes;
+
+  const r=await fetch(VALHALLA+'/isochrone',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      locations:[{lat,lon}], costing,
+      contours:[{time:reqMins}], polygons:true, denoise:0.2, generalize:80
+    })
+  });
+  if(!r.ok) throw new Error('Valhalla '+r.status);
+  const d=await r.json();
+  if(!d.features?.length) return null;
+  return {type:'Feature', geometry:d.features[0].geometry, properties:{threshold:minutes, reqMins}};
+}
+
+async function fetchCarTime(la1,lo1,la2,lo2) {
+  const r=await fetch(VALHALLA+'/route',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      locations:[{lat:la1,lon:lo1},{lat:la2,lon:lo2}],
+      costing:'auto', directions_type:'none'
+    })
+  });
+  if(!r.ok) throw new Error('Valhalla route '+r.status);
+  const d=await r.json();
+  const freeFlow=(d.trip?.summary?.time??0)/60;
+  // Escalar con factor hora punta si está activo
+  return peakHour ? freeFlow*PEAK_FACTOR : freeFlow;
+}
+
+// ── 8. Mapa base ────────────────────────────────────────────────────────────
+const map=L.map('map',{center:[40.43,-3.7],zoom:11,preferCanvas:true});
+
+// Capa base Esri WorldGrayCanvas (la misma que usa mapa.html — funciona sin clave)
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  {attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
+   maxZoom:16}
+).addTo(map);
+
+// ── Líneas de metro/cercanías (desde shapes GTFS) ───
+let lineasLayer = null;
+if (typeof METRO_LINEAS !== 'undefined') {
+  lineasLayer = L.geoJson(METRO_LINEAS, {
+    style: ft => ({
+      color: ft.properties.color || '#555',
+      weight: ft.properties.tag === 'metro' ? 2.8 :
+              ft.properties.tag === 'metro_ligero' ? 2.2 : 1.8,
+      opacity: ft.properties.tag === 'cercanias' ? 0.6 : 0.85,
+      dashArray: ft.properties.tag === 'cercanias' ? '6 4' : null
+    }),
+    onEachFeature: (ft, layer) => {
+      layer.bindTooltip(
+        `<b>${ft.properties.tag==='metro'?'L':''}${ft.properties.route}</b><br>
+         <small style="color:#666">${ft.properties.name||''}</small>`,
+        {sticky:true, className:''}
+      );
+    }
+  }).addTo(map);
+}
+document.getElementById('mc-lineas').addEventListener('change', e => {
+  if(!lineasLayer) return;
+  e.target.checked ? lineasLayer.addTo(map) : map.removeLayer(lineasLayer);
+});
+
+// ── Paradas de metro / metro ligero / cercanías ──────
+// Lookup de color por nombre de ruta, construido desde METRO_LINEAS
+const rColor = {};
+if (typeof METRO_LINEAS !== 'undefined') {
+  METRO_LINEAS.features.forEach(ft => {
+    const { route, color, tag } = ft.properties;
+    // metro: route_short_name="1" → RNAME devuelve "L1"
+    const dn = (tag === 'metro' && /^\d+$/.test(route)) ? 'L' + route : route;
+    rColor[dn] = color;
+  });
+}
+
+// Qué rutas pasan por cada estación (de los edges GTFS ya cargados)
+const stationRoutes = {};
+EDGES.forEach(([uI, vI, , rkI]) => {
+  const u = SK[uI], v = SK[vI], rn = RNAME_ARR[rkI];
+  if (!stationRoutes[u]) stationRoutes[u] = new Set();
+  if (!stationRoutes[v]) stationRoutes[v] = new Set();
+  stationRoutes[u].add(rn);
+  stationRoutes[v].add(rn);
+});
+
+// Crear marcadores
+const stationsLayer = L.featureGroup();
+for (const [key, sta] of Object.entries(STATIONS)) {
+  const routes = [...(stationRoutes[key] || [])].filter(r => r && r !== 'WALK');
+  const firstColor = routes.length ? (rColor[routes[0]] || '#666') : '#666';
+  const isCer = key.startsWith('cer_');
+  const isML  = key.startsWith('metro_ligero_');
+
+  L.circleMarker([sta.lat, sta.lon], {
+    radius: isCer ? 4 : isML ? 4 : 5,
+    fillColor: firstColor,
+    color: '#fff',
+    weight: 1.5,
+    fillOpacity: 0.95,
+    pane: 'markerPane'   // encima de las líneas, debajo de los marcadores de punta
+  })
+  .bindTooltip(
+    `<b>${sta.name}</b><br><small style="color:#555">${routes.join(' · ')}</small>`,
+    { sticky: true, direction: 'top' }
+  )
+  .addTo(stationsLayer);
+}
+stationsLayer.addTo(map);
+
+document.getElementById('mc-stations').addEventListener('change', e => {
+  e.target.checked ? stationsLayer.addTo(map) : map.removeLayer(stationsLayer);
+});
+
+// ── Capas de andando a metro ─────────────────────────
+const MC={5:'#1a9850',10:'#91cf60',15:'#fee08b'};
+const MOP={5:.45,10:.38,15:.32};
+// ── Capa de andando a metro (slider 1-20 min) ────────────────────────────────
+// Elige la fuente: WALK_MINUTES (real, si está) o METRO_SOMBRA estático (5/10/15)
+let walkLayer = null;
+let walkSliderVal = 10;
+
+// Color continuo: verde oscuro (1 min) → amarillo (20 min)
+function walkColor(m){
+  if(m<=5)  return '#1a9850';
+  if(m<=10) return '#91cf60';
+  if(m<=15) return '#fee08b';
+  return '#f4a582';
+}
+function walkOpacity(m){ return Math.max(0.22, 0.48 - m*0.012); }
+
+function getWalkGeoJson(m){
+  // Primero WALK_MINUTES (real, minuto a minuto)
+  if(WALK_MINUTES && WALK_MINUTES[String(m)]) return WALK_MINUTES[String(m)];
+  // Fallback: METRO_SOMBRA estático (bandas de 5 min)
+  const band = m<=5?'5':m<=10?'10':'15';
+  return METRO_SOMBRA[band]||null;
+}
+
+function setWalkLayer(m, visible){
+  if(walkLayer) map.removeLayer(walkLayer);
+  walkLayer=null;
+  const col=walkColor(m), op=walkOpacity(m);
+  document.getElementById('swatch-walk').style.background=col;
+  if(!visible) return;
+  const geo=getWalkGeoJson(m);
+  if(!geo) return;
+  walkLayer=L.geoJson(geo,{style:{color:col,fillColor:col,fillOpacity:op,weight:1,dashArray:'3'}}).addTo(map);
+}
+
+// Inicializar
+setWalkLayer(walkSliderVal, true);
+
+// Listeners del slider
+const walkCheckbox = document.getElementById('mc-walk');
+const walkSlider   = document.getElementById('walk-slider');
+const walkLbl      = document.getElementById('walk-label');
+
+walkSlider.addEventListener('input', ()=>{
+  walkSliderVal = +walkSlider.value;
+  walkLbl.textContent = `≤${walkSliderVal} min`;
+  setWalkLayer(walkSliderVal, walkCheckbox.checked);
+  hideIntersection();
+});
+walkCheckbox.addEventListener('change', ()=>{
+  setWalkLayer(walkSliderVal, walkCheckbox.checked);
+  hideIntersection();
+});
+
+// ── 9. Estado ───────────────────────────────────────────────────────────────
+const COLORS=['#e74c3c','#e67e22','#2980b9','#27ae60','#8e44ad',
+              '#16a085','#d35400','#2471a3','#1e8449','#6c3483'];
+let colorIdx=0;
+function nextColor(){return COLORS[colorIdx++%COLORS.length]}
+
+let points=[], pendingType='reference', clickAdding=false;
+const TYPE_HINTS={
+  reference:'Marca el lugar al que quieres llegar. La zona sombreada mostrará desde dónde puedes salir para llegar ahí a tiempo.',
+  transport:'Marca dónde dejas el coche para seguir en transporte. Selecciónalo luego como modo 🚇+🚗 en un destino.'
+};
+
+function newPoint(name,lat,lon,type){
+  return {
+    id:'pt-'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    name, lat, lon, type,
+    mode: type==='transport'?'transport':'car',
+    minutes:30, color:type==='transport'?'#7c3aed':nextColor(),
+    active:true, marker:null, layer:null, loading:false, error:null,
+    _ver:0
+  };
+}
+
+// ── 10. Marcadores ──────────────────────────────────────────────────────────
+function makeIcon(color,type){
+  const sym=type==='transport'?'🚌':'📍';
+  return L.divIcon({
+    html:`<div style="width:22px;height:22px;border-radius:50%;background:${color};
+      border:2px solid white;box-shadow:0 1px 6px rgba(0,0,0,.4);
+      display:flex;align-items:center;justify-content:center;font-size:11px">${sym}</div>`,
+    iconSize:[22,22], iconAnchor:[11,11], className:''
+  });
+}
+
+function setMarker(pt){
+  if(pt.marker) map.removeLayer(pt.marker);
+  pt.marker=L.marker([pt.lat,pt.lon],{icon:makeIcon(pt.color,pt.type),draggable:true})
+    .bindTooltip(pt.name).addTo(map);
+  pt.marker.on('dragend',e=>{
+    const ll=e.target.getLatLng(); pt.lat=ll.lat; pt.lon=ll.lng;
+    recomputeLayer(pt); saveState();
+  });
+}
+
+// ── 11. Cálculo de capas (con protección anti-race-condition) ──────────────
+function isoStyle(color){
+  return {color, fillColor:color, fillOpacity:0.26, weight:1.5, dashArray:'4'};
+}
+
+function modeLabel(mode){
+  if(mode==='car')    return peakHour?'🚗 Coche (hora punta)':'🚗 Coche';
+  if(mode==='walk')   return '🚶 Andando';
+  if(mode==='bike')   return '🚲 Bici';
+  if(mode==='transit')return '🚇 TP';
+  if(mode.startsWith('custom:')) return peakHour?'🔗 TP+🚗 (hora punta)':'🔗 TP+Coche';
+  return mode;
+}
+
+async function recomputeLayer(pt){
+  if(!pt.active || pt.type==='transport') return;
+
+  // ── Protección contra race-condition ──
+  // Incrementamos la versión ANTES de cualquier await.
+  // Al terminar el async, si la versión cambió (otra llamada llegó antes)
+  // o el punto fue eliminado, descartamos el resultado.
+  const ptId=pt.id;
+  pt._ver=(pt._ver||0)+1;
+  const myVer=pt._ver;
+
+  if(pt.layer){map.removeLayer(pt.layer);pt.layer=null;}
+  pt.loading=true; pt.error=null;
+  renderPoints(); gstatus(true);
+
+  try {
+    let feature=null;
+    const mode=pt.mode;
+
+    if(mode==='car'||mode==='walk'||mode==='bike'){
+      feature=await fetchValhalla(pt.lat,pt.lon,pt.minutes,COSTING[mode]);
+    } else if(mode==='transit'){
+      const T=computeTP(pt.lat,pt.lon);
+      feature=WALK_POLYS?buildTPFeature(T,pt.lat,pt.lon,pt.minutes)
+                        :extractIsochrone(buildGrid(T,pt.lat,pt.lon),pt.minutes);
+    } else if(mode.startsWith('custom:')){
+      const tpId=mode.slice(7);
+      const tpPt=points.find(p=>p.id===tpId);
+      if(!tpPt) throw new Error('Punto de transporte eliminado');
+      const carMin=await fetchCarTime(tpPt.lat,tpPt.lon,pt.lat,pt.lon);
+      const effMin=pt.minutes-carMin;
+      if(effMin<=2) throw new Error(`Coche ya tarda ${carMin.toFixed(0)} min; sube el umbral`);
+      const T=computeTP(tpPt.lat,tpPt.lon);
+      feature=WALK_POLYS?buildTPFeature(T,tpPt.lat,tpPt.lon,effMin)
+                        :extractIsochrone(buildGrid(T,tpPt.lat,tpPt.lon),effMin);
+      if(feature){
+        // Guardamos el desglose para el tooltip y la tarjeta
+        feature._carMin=carMin; feature._effMin=effMin;
+        feature._tpId=tpId;     feature._tpName=tpPt.name;
+      }
+    }
+
+    // ── Comprobar que el punto aún existe y esta versión sigue siendo válida ──
+    const livePt=points.find(p=>p.id===ptId);
+    if(!livePt||livePt._ver!==myVer||!livePt.active) return; // descartado
+
+    if(feature){
+      // Almacenar desglose de tiempo en el punto (modo custom)
+      if(feature._carMin!=null){
+        livePt._carMin=feature._carMin; livePt._effMin=feature._effMin;
+        livePt._tpId=feature._tpId;    livePt._tpName=feature._tpName;
+      }
+
+      // Unión real: sin borde interior + nonzero para que el solape sume (no anule)
+      const sty=feature._union
+        ?Object.assign(isoStyle(livePt.color),{weight:0,dashArray:null,fillRule:'nonzero'})
+        :isoStyle(livePt.color);
+      livePt.layer=L.geoJson(feature,{style:sty})
+        .bindTooltip(()=>{
+          if(livePt.mode.startsWith('custom:')){
+            const peak=peakHour?` <span style="color:#dc2626">⚡hp</span>`:'';
+            return `<div style="line-height:1.65;min-width:170px">
+              <b>Zona de salida válida</b><br>
+              🚇 Metro/PT → <b>${livePt._tpName||'?'}</b><br>
+              &nbsp;&nbsp;≤ ${Math.round(livePt._effMin||0)} min<br>
+              🚗 Coche → <b>${livePt.name}</b>${peak}<br>
+              &nbsp;&nbsp;≈ ${Math.round(livePt._carMin||0)} min<br>
+              <small style="color:#888">Total ≤ ${livePt.minutes} min</small>
+            </div>`;
+          }
+          const note=feature._note?`<br><small>${feature._note}</small>`:'';
+          return `<b>${livePt.name}</b><br>${modeLabel(livePt.mode)} ≤${livePt.minutes} min${note}`;
+        },{sticky:true})
+        .addTo(map);
+    } else {
+      livePt.error='Sin zona en ese umbral';
+    }
+  } catch(e) {
+    const livePt=points.find(p=>p.id===ptId);
+    if(livePt&&livePt._ver===myVer) livePt.error=e.message||'Error';
+  }
+
+  const livePt=points.find(p=>p.id===ptId);
+  if(livePt&&livePt._ver===myVer) livePt.loading=false;
+  renderPoints(); gstatus(false); saveState();
+}
+
+// ── 12. Gestión de puntos ───────────────────────────────────────────────────
+async function addPointFromInput(){
+  const input=document.getElementById('add-input');
+  const text=input.value.trim();
+  if(!text){toast('Escribe una dirección o pega un link de Google Maps');return;}
+  const btn=document.getElementById('btn-add-geo');
+  btn.disabled=true; btn.textContent='⌛ Buscando…';
+  try{
+    let coords=parseGMapsURL(text), name;
+    if(!coords){
+      gstatus(true);
+      const r=await geocode(text);
+      gstatus(false);
+      if(!r){toast('No se encontró la dirección');return;}
+      coords=r; name=r.name||text;
+    } else {
+      // Extraer nombre legible de la URL (parte del path)
+      const m=text.match(/place\/([^/@?]+)/);
+      name=m?decodeURIComponent(m[1]).replace(/\+/g,' ')
+          :`(${coords.lat.toFixed(3)}, ${coords.lon.toFixed(3)})`;
+    }
+    name=name.slice(0,45);
+    const pt=newPoint(name,coords.lat,coords.lon,pendingType);
+    points.push(pt); setMarker(pt);
+    input.value='';
+    renderPoints();
+    recomputeLayer(pt);
+    map.setView([pt.lat,pt.lon],Math.max(map.getZoom(),12));
+    saveState();
+  } finally {
+    btn.disabled=false; btn.textContent='🔍 Buscar y añadir';
+  }
+}
+
+function addPointFromClick(lat,lon){
+  const name=`${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+  const pt=newPoint(name,lat,lon,pendingType);
+  points.push(pt); setMarker(pt);
+  renderPoints(); recomputeLayer(pt); saveState();
+}
+
+function deletePoint(id){
+  const pt=points.find(p=>p.id===id); if(!pt) return;
+  if(pt.marker) map.removeLayer(pt.marker);
+  if(pt.layer)  map.removeLayer(pt.layer);
+  // Invalidar versión: el async en curso descartará su resultado
+  pt._ver=-1;
+  points=points.filter(p=>p.id!==id);
+  // Limpiar referencias custom en otros puntos
+  points.forEach(p=>{
+    if(p.mode==='custom:'+id){p.mode='transit';recomputeLayer(p);}
+  });
+  renderPoints(); hideIntersection(); saveState();
+}
+
+function clearAllPoints(){
+  if(!points.length) return;
+  if(!confirm('¿Eliminar todos los puntos y sus sombreados?')) return;
+  points.forEach(p=>{
+    p._ver=-1;
+    if(p.marker) map.removeLayer(p.marker);
+    if(p.layer)  map.removeLayer(p.layer);
+  });
+  points=[];
+  renderPoints(); hideIntersection(); saveState();
+}
+
+// Ocultar / mostrar sombreado (sin eliminar el punto)
+function toggleLayer(id){
+  const pt=points.find(p=>p.id===id); if(!pt) return;
+  if(pt.type==='transport') return;
+  pt.active=!pt.active;
+  if(!pt.active&&pt.layer){map.removeLayer(pt.layer);pt.layer=null;}
+  if(pt.active) recomputeLayer(pt);
+  renderPoints(); hideIntersection(); saveState();
+}
+
+function updateMode(id,mode){
+  const pt=points.find(p=>p.id===id); if(!pt||pt.mode===mode) return;
+  pt.mode=mode;
+  // Limpiar datos del modo anterior para que el desglose no quede obsoleto
+  delete pt._carMin; delete pt._effMin; delete pt._tpId; delete pt._tpName;
+  if(pt.layer){map.removeLayer(pt.layer);pt.layer=null;}
+  recomputeLayer(pt); renderPoints(); hideIntersection(); saveState();
+}
+
+function updateMinutes(id,val){
+  const pt=points.find(p=>p.id===id);
+  const mins=parseInt(val);
+  if(!pt||isNaN(mins)||mins<1) return;
+  pt.minutes=mins;
+  if(pt.layer){map.removeLayer(pt.layer);pt.layer=null;}
+  recomputeLayer(pt); hideIntersection(); saveState();
+}
+
+function retryPoint(id){
+  const pt=points.find(p=>p.id===id); if(!pt) return;
+  pt.error=null; recomputeLayer(pt);
+}
+
+// ── 13. Render del panel ────────────────────────────────────────────────────
+function renderPoints(){
+  const container=document.getElementById('points-list');
+  document.getElementById('btn-clear-all').style.display=points.length?'':'none';
+
+  if(!points.length){
+    container.innerHTML='<div style="color:#aaa;font-size:12px;padding:4px 0 8px">Aún no hay puntos.</div>';
+    return;
+  }
+
+  const tpPts=points.filter(p=>p.type==='transport');
+
+  container.innerHTML=points.map(pt=>{
+    const isTP=pt.type==='transport';
+
+    // ── Fila 1: nombre + eliminar ──
+    const badge=isTP
+      ?'<span class="pt-badge tp">recogida</span>'
+      :'<span class="pt-badge">destino</span>';
+
+    // ── Fila 2: modo + minutos (solo ref) ──
+    let row2='';
+    if(!isTP){
+      const opts=`
+        <option value="car"     ${pt.mode==='car'?'selected':''}>🚗 Coche</option>
+        <option value="walk"    ${pt.mode==='walk'?'selected':''}>🚶 Andando</option>
+        <option value="bike"    ${pt.mode==='bike'?'selected':''}>🚲 Bici</option>
+        <option value="transit" ${pt.mode==='transit'?'selected':''}>🚇 TP (metro)</option>
+        ${tpPts.filter(tp=>tp.id!==pt.id).map(tp=>
+          `<option value="custom:${tp.id}" ${pt.mode==='custom:'+tp.id?'selected':''}>` +
+          `�+�🚗 a "${tp.name.slice(0,14)}", luego coche</option>`
+        ).join('')}`;
+      row2=`<div class="pt-r2">
+        <select class="pt-mode" onchange="updateMode('${pt.id}',this.value)">${opts}</select>
+        <div class="pt-min-wrap">
+          <input class="pt-min" type="number" min="5" max="180" value="${pt.minutes}"
+            onchange="updateMinutes('${pt.id}',this.value)">
+          <span class="pt-min-lbl">min</span>
+        </div>
+        <button class="btn-retry" ${pt.loading?'disabled':''} onclick="retryPoint('${pt.id}')" title="Recalcular">↺</button>
+      </div>`;
+    }
+
+    // ── Fila 3: toggle visible + estado ──
+    let statusTxt='';
+    if(pt.loading) statusTxt='<span style="color:#3b82f6">⌛ calculando…</span>';
+    else if(pt.error) statusTxt=`<span class="pt-err">⚠ ${pt.error} <button class="sec-clear" onclick="retryPoint('${pt.id}')">reintentar</button></span>`;
+    else if(!pt.active) statusTxt='<span style="color:#94a3b8">capa oculta</span>';
+    else if(pt.layer){
+      if(pt._carMin!=null){
+        // Modo TP+Coche: mostrar desglose
+        const peak=peakHour?' ⚡':'';
+        statusTxt=`<span style="color:#16a34a">✓</span> `+
+          `<span style="font-size:11px;color:#64748b">`+
+          `🚇≤${Math.round(pt._effMin)}min · 🚗${Math.round(pt._carMin)}min${peak}`+
+          `</span>`;
+      } else {
+        statusTxt='<span style="color:#16a34a">✓ capa activa</span>';
+      }
+    }
+    else if(!isTP) statusTxt='<span style="color:#f59e0b">pendiente</span>';
+
+    let row3='';
+    if(!isTP){
+      row3=`<div class="pt-r3">
+        <button class="btn-vis ${pt.active?'on':'off'}" onclick="toggleLayer('${pt.id}')">
+          ${pt.active?'👁 Sombreado: ON':'🚫 Sombreado: OFF'}
+        </button>
+        <span class="pt-status">${statusTxt}</span>
+      </div>`;
+    } else {
+      row3=`<div class="pt-r3"><span class="pt-status" style="font-size:11px;color:#94a3b8">Punto de recogida — selecciónalo como modo 🚇+🚗 en un destino</span></div>`;
+    }
+
+    return `<div class="pt-card${pt.loading?' loading':''}" id="card-${pt.id}">
+      <div class="pt-bar"></div>
+      <div class="pt-r1">
+        <div class="pt-dot" style="background:${pt.color}"></div>
+        <span class="pt-name" title="${pt.name}">${pt.name}</span>
+        ${badge}
+        <button class="btn-del" onclick="deletePoint('${pt.id}')">🗑 Eliminar</button>
+      </div>
+      ${row2}${row3}
+    </div>`;
+  }).join('');
+
+  document.getElementById('car-guide').style.display=
+    points.some(p=>p.type==='transport')?'':'none';
+
+  // Dibujar/actualizar líneas de ruta de coche
+  updateCarLines();
+}
+
+// ── 13b. Líneas de ruta de coche (recogida → destino) ──────────────────────
+const carRouteLines={};  // ptId → L.featureGroup
+
+function updateCarLines(){
+  // Limpiar líneas anteriores
+  Object.values(carRouteLines).forEach(lg=>map.removeLayer(lg));
+  Object.keys(carRouteLines).forEach(k=>delete carRouteLines[k]);
+
+  points.forEach(pt=>{
+    if(pt.type!=='reference') return;
+    if(!pt.mode.startsWith('custom:')) return;
+    if(!pt.active) return;          // no mostrar si el sombreado está oculto
+    const tpId=pt.mode.slice(7);
+    const tpPt=points.find(p=>p.id===tpId);
+    if(!tpPt) return;
+
+    // Línea discontinua: punto de recogida → destino
+    const line=L.polyline([[tpPt.lat,tpPt.lon],[pt.lat,pt.lon]],{
+      color:'#475569', dashArray:'9 5', weight:2.5, opacity:0.7
+    }).bindTooltip(
+      `🚗 ${tpPt.name} → ${pt.name}` +
+      (pt._carMin!=null ? `<br>≈ ${Math.round(pt._carMin)} min${peakHour?' (hora punta)':''}` : ''),
+      {sticky:true}
+    );
+
+    // Etiqueta en el punto medio
+    const midLat=(tpPt.lat+pt.lat)/2, midLon=(tpPt.lon+pt.lon)/2;
+    const carTxt=pt._carMin!=null?`🚗 ${Math.round(pt._carMin)} min`:'🚗';
+    const peak=peakHour?'<span style="color:#dc2626"> ⚡</span>':'';
+    const lbl=L.marker([midLat,midLon],{
+      icon:L.divIcon({
+        html:`<div style="background:white;border:1px solid #94a3b8;border-radius:5px;
+                padding:2px 8px;font-size:11px;font-weight:600;color:#475569;
+                white-space:nowrap;box-shadow:0 1px 5px rgba(0,0,0,.18)">
+              ${carTxt}${peak}</div>`,
+        className:'', iconAnchor:[36,12]
+      }),
+      interactive:false, pane:'tooltipPane'
+    });
+
+    // Marcador de flecha en el destino (punto de bajada)
+    const arrow=L.marker([pt.lat,pt.lon],{
+      icon:L.divIcon({
+        html:`<div style="background:white;border:2px solid ${pt.color};border-radius:5px;
+                padding:2px 7px;font-size:10px;font-weight:700;color:${pt.color};
+                white-space:nowrap;box-shadow:0 1px 5px rgba(0,0,0,.2)">
+              te deja aquí</div>`,
+        className:'', iconAnchor:[-4,28]
+      }),
+      interactive:false, pane:'tooltipPane'
+    });
+
+    carRouteLines[pt.id]=L.featureGroup([line,lbl,arrow]).addTo(map);
+  });
+}
+
+// ── 14. Intersección ────────────────────────────────────────────────────────
+let interLayer=null, interActive=false, savedVis={};
+
+function getActiveShadingLayers(){
+  const out=[];
+  if(walkLayer&&map.hasLayer(walkLayer)) out.push(walkLayer);
+  points.forEach(pt=>{if(pt.active&&pt.layer&&map.hasLayer(pt.layer))out.push(pt.layer);});
+  return out;
+}
+
+function showIntersection(){
+  if(interActive){hideIntersection();return;}
+  const layers=getActiveShadingLayers();
+  if(layers.length<2){toast('Activa al menos 2 capas de sombreado');return;}
+
+  function unionLayer(l){
+    const gj=l.toGeoJSON();
+    const feats=(gj.features||[]).filter(f=>f.geometry&&/Polygon/.test(f.geometry.type));
+    if(!feats.length) return null;
+    return feats.reduce((a,f)=>{try{return turf.union(a,f)}catch{return a}});
+  }
+  const polys=layers.map(unionLayer).filter(Boolean);
+  if(polys.length<2){toast('No hay suficientes polígonos');return;}
+
+  const result=polys.reduce((a,p)=>{
+    if(!a) return null;
+    try{return turf.intersect(a,p)}catch{return null}
+  });
+
+  // Guardar visibilidad y ocultar capas individuales
+  savedVis={};
+  savedVis['walk']=walkLayer&&map.hasLayer(walkLayer);
+  if(walkLayer&&map.hasLayer(walkLayer)) map.removeLayer(walkLayer);
+  points.forEach(pt=>{
+    savedVis[pt.id]=pt.layer&&map.hasLayer(pt.layer);
+    if(pt.layer&&map.hasLayer(pt.layer)) map.removeLayer(pt.layer);
+  });
+
+  if(!result){
+    restoreVis();
+    toast('No hay zona común a todas las capas activas');
+    return;
+  }
+
+  interLayer=L.geoJson(result,{style:{
+    color:'#4a235a',fillColor:'#7d3c98',fillOpacity:.65,weight:2
+  }}).bindTooltip('Intersección de capas activas',{sticky:true}).addTo(map);
+
+  interActive=true;
+  const btn=document.getElementById('btn-inter');
+  btn.textContent='× Ocultar intersección';
+  btn.classList.add('on');
+}
+
+function hideIntersection(){
+  if(!interActive) return;
+  if(interLayer){map.removeLayer(interLayer);interLayer=null;}
+  restoreVis();
+  interActive=false;
+  const btn=document.getElementById('btn-inter');
+  btn.textContent='∩ Intersección de capas activas';
+  btn.classList.remove('on');
+}
+
+function restoreVis(){
+  if(walkLayer&&savedVis['walk']&&!map.hasLayer(walkLayer)) walkLayer.addTo(map);
+  points.forEach(pt=>{
+    if(pt.layer&&savedVis[pt.id]&&!map.hasLayer(pt.layer)) pt.layer.addTo(map);
+  });
+  savedVis={};
+}
+
+// ── 14b. Toggle hora punta ──────────────────────────────────────────────────
+function togglePeak(){
+  peakHour=!peakHour;
+  const btn=document.getElementById('btn-peak');
+  const note=document.getElementById('peak-note');
+
+  if(peakHour){
+    btn.textContent=`🚗 Coche: hora punta (factor ×${PEAK_FACTOR})`;
+    btn.classList.add('on');
+    note.textContent=`+${Math.round((PEAK_FACTOR-1)*100)} % estimado (hora punta Madrid)`;
+  } else {
+    btn.textContent='🚦 Coche: libre circulación';
+    btn.classList.remove('on');
+    note.textContent=`Valhalla sin tráfico real; factor ×${PEAK_FACTOR} se aplica al coche`;
+  }
+
+  // Recomputar todas las capas activas de coche o modo personalizado (TP+coche)
+  let count=0;
+  points.forEach(pt=>{
+    if(pt.active && pt.type==='reference' &&
+       (pt.mode==='car' || pt.mode.startsWith('custom:'))) {
+      if(pt.layer){map.removeLayer(pt.layer);pt.layer=null;}
+      recomputeLayer(pt);
+      count++;
+    }
+  });
+
+  hideIntersection();
+  if(count>0)
+    toast(peakHour
+      ?`Hora punta activada — recalculando ${count} capa${count>1?'s':''} de coche`
+      :`Libre circulación — recalculando ${count} capa${count>1?'s':''} de coche`);
+  else
+    toast(peakHour?'Hora punta activada':'Libre circulación');
+}
+
+// ── 15. Persistencia ────────────────────────────────────────────────────────
+function saveState(){
+  try{
+    localStorage.setItem('hestia_pts',JSON.stringify(
+      points.map(p=>({id:p.id,name:p.name,lat:p.lat,lon:p.lon,
+        type:p.type,mode:p.mode,minutes:p.minutes,color:p.color,active:p.active}))
+    ));
+  }catch{}
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem('hestia_pts'); if(!raw) return;
+    JSON.parse(raw).forEach(s=>{
+      const pt={...s,marker:null,layer:null,loading:false,error:null,_ver:0};
+      points.push(pt); setMarker(pt);
+      if(pt.active) recomputeLayer(pt);
+    });
+    colorIdx=points.length;
+    renderPoints();
+  }catch{}
+}
+
+// ── 15c. Plantillas ─────────────────────────────────────────────────────────
+const TPL_KEY='hestia_tpls';
+function tplAll(){try{return JSON.parse(localStorage.getItem(TPL_KEY)||'{}')}catch{return{}}}
+function tplSaveAll(t){try{localStorage.setItem(TPL_KEY,JSON.stringify(t))}catch{}}
+function tplRefreshSelect(){
+  const sel=document.getElementById('tpl-select');
+  sel.innerHTML='<option value="">📂 Mis plantillas…</option>'+
+    Object.keys(tplAll()).map(n=>`<option value="${n}">${n}</option>`).join('');
+}
+function tplSave(){
+  const name=(prompt('Nombre de la plantilla:')||'').trim();
+  if(!name) return;
+  if(!points.length){toast('No hay puntos que guardar');return;}
+  const t=tplAll();
+  t[name]={ts:Date.now(),pts:points.map(p=>({name:p.name,lat:p.lat,lon:p.lon,
+    type:p.type,mode:p.mode,minutes:p.minutes,active:p.active}))};
+  tplSaveAll(t); tplRefreshSelect();
+  document.getElementById('tpl-select').value=name;
+  toast(`Plantilla "${name}" guardada (${t[name].pts.length} puntos)`);
+}
+function tplLoad(name){
+  const t=tplAll()[name]; if(!t) return;
+  hideIntersection();
+  points.forEach(p=>{p._ver=-1;
+    if(p.marker) map.removeLayer(p.marker);
+    if(p.layer)  map.removeLayer(p.layer);});
+  points=[];
+  t.pts.forEach(s=>{
+    const pt={...s,id:'pt-'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      color:s.type==='transport'?'#7c3aed':nextColor(),
+      marker:null,layer:null,loading:false,error:null,_ver:0};
+    points.push(pt); setMarker(pt);
+    if(pt.active) recomputeLayer(pt);
+  });
+  colorIdx=points.length;
+  renderPoints(); saveState();
+  toast(`Plantilla "${name}" cargada`);
+}
+function tplDelete(){
+  const name=document.getElementById('tpl-select').value;
+  if(!name) return;
+  const t=tplAll(); delete t[name]; tplSaveAll(t); tplRefreshSelect();
+  toast(`Plantilla "${name}" eliminada`);
+}
+
+// ── 15d. Exportar zona a idealista ──────────────────────────────────────────
+function simplifyRing(ring,maxPts){
+  if(!ring) return null;
+  if(ring.length<=maxPts) return ring;
+  const f=turf.polygon([ring]);
+  for(const tol of [1e-4,2e-4,4e-4,8e-4,1.5e-3,3e-3,6e-3,1.2e-2]){
+    try{
+      const r=turf.simplify(f,{tolerance:tol,highQuality:false}).geometry.coordinates[0];
+      if(r.length<=maxPts) return r;
+    }catch{}
+  }
+  const step=Math.ceil((ring.length-1)/(maxPts-1)),out=[];
+  for(let i=0;i<ring.length-1;i+=step) out.push(ring[i]);
+  out.push(ring[0]);
+  return out;
+}
+function polylineEncode(ring){  // Google polyline: enc(lat), enc(lon)
+  let out='',pa=0,po=0;
+  const enc=v=>{v=v<0?~(v<<1):v<<1;let s='';
+    while(v>=0x20){s+=String.fromCharCode((0x20|(v&0x1f))+63);v>>=5;}
+    return s+String.fromCharCode(v+63);};
+  for(const [lo,la] of ring){
+    const a=Math.round(la*1e5),o=Math.round(lo*1e5);
+    out+=enc(a-pa)+enc(o-po);pa=a;po=o;
+  }
+  return out;
+}
+function openIdealista(op){   // op: 'venta' | 'alquiler'
+  const lyr=interLayer||(points.find(p=>p.active&&p.layer)||{}).layer;
+  if(!lyr){toast('Activa una capa o calcula la intersección primero');return;}
+  const gj=lyr.toGeoJSON();
+  const feats=gj.type==='FeatureCollection'?gj.features:[gj];
+  const polys=[];
+  feats.forEach(f=>{const g=f.geometry||f;
+    if(g.type==='Polygon') polys.push(g.coordinates);
+    else if(g.type==='MultiPolygon') polys.push(...g.coordinates);});
+  if(!polys.length){toast('No hay polígono exportable');return;}
+  let ring=polys[0][0],bestA=-1;
+  polys.forEach(poly=>{
+    const a=turf.area({type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:poly}});
+    if(a>bestA){bestA=a;ring=poly[0];}
+  });
+  const simp=simplifyRing(ring,48);
+  if(!simp||simp.length<4){toast('No hay polígono exportable');return;}
+  const shape='(('+polylineEncode(simp)+'))';
+  window.open(`https://www.idealista.com/areas/${op}-viviendas/?shape=`+
+    encodeURIComponent(shape),'_blank');
+  if(polys.length>1) toast(`Zona con ${polys.length} islas: exportada la mayor`,4500);
+}
+
+// ── 16. Aux UI ──────────────────────────────────────────────────────────────
+let _toastT=null;
+function toast(msg,ms=3200){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_toastT); _toastT=setTimeout(()=>el.classList.remove('show'),ms);
+}
+function gstatus(on){
+  document.getElementById('gstatus').style.display=on?'block':'none';
+}
+
+// ── 17. Event listeners ─────────────────────────────────────────────────────
+document.getElementById('btn-add-geo').addEventListener('click',addPointFromInput);
+document.getElementById('add-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter') addPointFromInput();
+});
+document.querySelectorAll('.type-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel'); pendingType=btn.dataset.type;
+  document.getElementById('type-hint').textContent=TYPE_HINTS[pendingType]||TYPE_HINTS.reference;
+}));
+
+document.getElementById('btn-add-click').addEventListener('click',()=>{
+  clickAdding=!clickAdding;
+  document.body.classList.toggle('click-mode',clickAdding);
+  const btn=document.getElementById('btn-add-click');
+  btn.textContent=clickAdding?'✕ Cancelar':'🖱 Clic en mapa';
+  btn.classList.toggle('active',clickAdding);
+  if(clickAdding) toast('Haz clic en cualquier punto del mapa');
+});
+map.on('click',e=>{
+  if(!clickAdding) return;
+  clickAdding=false;
+  document.body.classList.remove('click-mode');
+  const btn=document.getElementById('btn-add-click');
+  btn.textContent='🖱 Clic en mapa'; btn.classList.remove('active');
+  addPointFromClick(e.latlng.lat,e.latlng.lng);
+});
+
+let collapsed=false;
+document.getElementById('btn-collapse').addEventListener('click',()=>{
+  collapsed=!collapsed;
+  document.getElementById('panel-top').style.display=collapsed?'none':'';
+  document.getElementById('pts-scroll').style.display=collapsed?'none':'';
+  document.getElementById('btn-collapse').textContent=collapsed?'+':'−';
+});
+
+document.getElementById('btn-inter').addEventListener('click',showIntersection);
+document.getElementById('btn-tpl-save').addEventListener('click',tplSave);
+document.getElementById('btn-tpl-del').addEventListener('click',tplDelete);
+document.getElementById('tpl-select').addEventListener('change',e=>{
+  if(e.target.value) tplLoad(e.target.value);
+});
+document.getElementById('btn-ideal-venta').addEventListener('click',()=>openIdealista('venta'));
+document.getElementById('btn-ideal-alq').addEventListener('click',()=>openIdealista('alquiler'));
+
+// ── 18. Init ────────────────────────────────────────────────────────────────
+renderPoints();
+loadState();
+tplRefreshSelect();
+</script>
+</body>
+</html>
