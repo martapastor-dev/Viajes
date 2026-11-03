@@ -549,7 +549,7 @@ def build(force: bool = False) -> gpd.GeoDataFrame:
     geoms_path, meta_path = processed_paths()
     if geoms_path.exists() and not force:
         meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-        if meta.get("years") == config.SEGURIDAD_YEARS:
+        if list(meta.get("years") or []) == list(config.SEGURIDAD_YEARS):
             return gpd.read_file(geoms_path)
     gdf = build_geometries()
     meta = {
@@ -563,3 +563,21 @@ def build(force: bool = False) -> gpd.GeoDataFrame:
     gdf.to_file(geoms_path, driver="GeoJSON")
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
     return gdf
+
+
+def combined_score(seg: gpd.GeoDataFrame, walk_union, max_minutes: int) -> gpd.GeoDataFrame:
+    """Score combinado accesibilidad + seguridad (0-100, mayor = mejor) por polígono.
+
+    Accesibilidad: porcentaje del polígono alcanzable andando en ≤``max_minutes`` a una estación
+    (``walk_union`` debe estar en EPSG:25830). Seguridad: 100 − índice de incidencia; los polígonos
+    sin datos de delincuencia quedan con ``score`` vacío.
+    """
+    seg = seg.copy()
+    if walk_union is None or seg.empty:
+        seg["acc_pct"] = np.nan
+    else:
+        metric = seg.to_crs(config.CRS_METRIC)
+        share = (metric.geometry.intersection(walk_union).area / metric.geometry.area.replace(0, np.nan)).clip(0, 1)
+        seg["acc_pct"] = (share * 100).round(1)
+    seg["score"] = (0.5 * seg["acc_pct"] + 0.5 * (100 - seg["index"])).round(1).where(seg["index"].notna())
+    return seg

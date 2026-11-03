@@ -91,6 +91,11 @@ def main(out: str) -> None:
         clipped = clipped[(~clipped.geometry.is_empty) & (clipped.geometry.area > 5_000)]
         security_gdf = clipped.to_crs(config.CRS_WGS84)
 
+    score_gdf = None
+    walk_union = polys[max(polys)].to_crs(config.CRS_METRIC).geometry.union_all() if polys else None
+    if security_gdf is not None and len(security_gdf):
+        score_gdf = seguridad.combined_score(security_gdf, walk_union, max(polys) if polys else TIMES[-1])
+
     lines_shown = lines[lines["mode"].isin(selected_modes)]
     acc = access[access["station_id"].isin(stations["station_id"])]
 
@@ -106,12 +111,15 @@ def main(out: str) -> None:
         mapping.add_neighbourhoods(m, places[places.within(zone)])
     mapping.add_lines(m, lines_shown)
     mapping.add_isochrones(m, polys, stations, individual=len(stations) <= 80, label="Andando")
-    mapping.add_security(m, security_gdf)
+    mapping.add_security(m, security_gdf, show=score_gdf is None)
+    mapping.add_score(m, score_gdf, max(polys) if polys else TIMES[-1])
     mapping.add_stations(m, stations, acc)
     mapping.add_origin(m, origin.lat, origin.lon, origin.name)
     mapping.add_legend(m, list(polys), show_overlaps=False)
     if security_gdf is not None:
         mapping.add_security_legend(m)
+    if score_gdf is not None:
+        mapping.add_score_legend(m)
     mapping.finish(m)
     m.fit_bounds([[b[1], b[0]], [b[3], b[2]]])
     m.save(out)

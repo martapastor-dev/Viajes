@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from accesibilidad import seguridad
+from accesibilidad import config, seguridad
 
 
 def test_norm_name():
@@ -114,6 +114,24 @@ def test_capital_rows_rates():
     assert r["population"] == 100_000
     assert r["count_drug"] == 15
     assert r["rate_pat"] == pytest.approx(200 / 1 / 100_000 * 1000)
+
+
+def test_combined_score():
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    poly = box(-3.88, 40.39, -3.87, 40.40)
+    seg = gpd.GeoDataFrame({"index": [20.0, 80.0], "barrio": ["A", "B"]}, geometry=[poly, poly], crs="EPSG:4326")
+    walk = gpd.GeoSeries([poly], crs="EPSG:4326").to_crs(config.CRS_METRIC).union_all()
+    out = seguridad.combined_score(seg, walk, 15)
+    assert out["acc_pct"].tolist() == [100.0, 100.0]
+    assert out["score"].tolist() == [90.0, 60.0]
+    half = gpd.GeoSeries([box(-3.875, 40.39, -3.87, 40.40)], crs="EPSG:4326").to_crs(config.CRS_METRIC).union_all()
+    out2 = seguridad.combined_score(seg.iloc[[0]].copy(), half, 15)
+    assert 40.0 < out2["acc_pct"].iloc[0] < 60.0
+    nan_seg = seg.assign(index=[np.nan, np.nan])
+    out3 = seguridad.combined_score(nan_seg, walk, 15)
+    assert out3["score"].isna().all()
 
 
 def test_rank_index_bounds_and_nan():

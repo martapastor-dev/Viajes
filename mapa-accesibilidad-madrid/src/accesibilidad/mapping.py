@@ -267,11 +267,11 @@ def _security_popup(props: dict) -> str:
     return "<br>".join(lines)
 
 
-def add_security(m: folium.Map, gdf: gpd.GeoDataFrame) -> None:
+def add_security(m: folium.Map, gdf: gpd.GeoDataFrame, show: bool = True) -> None:
     """Coropleta del índice de seguridad recortada a las zonas con acceso a transporte."""
     if gdf is None or gdf.empty:
         return
-    fg = folium.FeatureGroup(name="Delincuencia (últimos 3 años)", show=True)
+    fg = folium.FeatureGroup(name="Delincuencia (últimos 3 años)", show=show)
     for _, row in gdf.iterrows():
         style = {"color": "#333", "weight": 0.6, "fillColor": security_color(row.get("index")), "fillOpacity": 0.45}
         folium.GeoJson(
@@ -295,6 +295,62 @@ def add_security_legend(m: folium.Map) -> None:
         '<span style="background:#bdbdbd;width:14px;height:14px;display:inline-block;margin-right:6px"></span>sin datos'
         '<div style="margin-top:4px;color:#666">Índice relativo 0-100 (capital y corona por separado); '
         "capital = proxy policial por distrito</div></div>"
+    )
+    m.get_root().html.add_child(folium.Element(legend))
+
+
+def _score_popup(props: dict, max_minutes: int) -> str:
+    name = html.escape(str(props.get("barrio") or props.get("municipality") or "?"))
+    kind = "Barrio" if props.get("kind") == "barrio" else "Municipio"
+    district = props.get("district")
+    pop = props.get("population")
+    pop_txt = f"{pop:,.0f}".replace(",", ".") if pop == pop and pop else "-"
+    lines = [f"<b>{name}</b><br>{kind}: {html.escape(str(district or props.get('municipality') or '-'))}"]
+    if pop_txt != "-":
+        lines.append(f"Población ({props.get('years') or '?'}): {pop_txt} hab.")
+    score = props.get("score")
+    if score is None or score != score:
+        lines.append("<br><i>Sin datos de delincuencia</i> (municipio sin estadística oficial, normalmente &lt;20.000 hab.)")
+        return "<br>".join(lines)
+    acc = props.get("acc_pct")
+    acc_txt = f"{acc:.0f}% del polígono" if acc == acc else "-"
+    lines += [
+        f"<br><b>Score combinado: {score:.0f}/100</b> (mayor = mejor; 50% accesibilidad + 50% seguridad)",
+        f"<br>Accesibilidad: {acc_txt} alcanzable andando en ≤{max_minutes} min a una estación",
+        f"Seguridad: {(100 - props.get('index', 100)):.0f}/100 (100 − índice de incidencia {props.get('index', 0):.0f}/100)",
+    ]
+    if props.get("kind") == "barrio":
+        lines.append("<br><i>Seguridad: proxy policial por distrito del ayuntamiento.</i>")
+    return "<br>".join(lines)
+
+
+def add_score(m: folium.Map, gdf: gpd.GeoDataFrame, max_minutes: int) -> None:
+    """Coropleta del score combinado (accesibilidad + seguridad): verde = mejor, rojo = peor."""
+    if gdf is None or gdf.empty:
+        return
+    fg = folium.FeatureGroup(name="Score combinado (accesibilidad + seguridad)", show=True)
+    for _, row in gdf.iterrows():
+        style = {"color": "#333", "weight": 0.6, "fillColor": security_color(100 - row.get("score")), "fillOpacity": 0.45}
+        folium.GeoJson(
+            row.geometry.__geo_interface__,
+            style_function=lambda _, s=style: s,
+            popup=folium.Popup(_score_popup(row.to_dict(), max_minutes), max_width=320),
+            tooltip=html.escape(str(row.get("barrio") or row.get("municipality") or "")),
+        ).add_to(fg)
+    fg.add_to(m)
+
+
+def add_score_legend(m: folium.Map) -> None:
+    stops = "".join(
+        f'<span style="display:inline-block;width:14px;height:14px;background:{c};margin-right:2px"></span>'
+        for _, c in reversed(SECURITY_STOPS)
+    )
+    legend = (
+        '<div style="position:fixed;bottom:24px;right:12px;z-index:9999;background:white;padding:8px 10px;'
+        'border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:12px">'
+        f"<b>Score combinado</b><br>{stops}<br>"
+        '<span style="background:#bdbdbd;width:14px;height:14px;display:inline-block;margin-right:6px"></span>sin datos'
+        '<div style="margin-top:4px;color:#666">Verde = mejor · 50% accesibilidad + 50% seguridad</div></div>'
     )
     m.get_root().html.add_child(folium.Element(legend))
 

@@ -82,6 +82,10 @@ validado; los servicios (supermercados, salud, colegios, zonas verdes) quedan pa
     incidencia) es el percentil dentro de cada fuente por separado (capital y corona no se mezclan).
     Las geometrías son los barrios y distritos oficiales del geoportal del Ayuntamiento de Madrid
     (WGS84); los municipios usan los mismos límites OSM que el resto del pipeline.
+- **Score combinado**: capa opcional que mezcla el 50 % de accesibilidad (porcentaje del polígono
+  alcanzable andando en el tiempo máximo seleccionado a una estación, con la red peatonal real) y el
+  50 % de seguridad (100 − índice de incidencia). Verde = mejor; los municipios sin datos quedan en
+  gris. En la app se puede alternar con la capa de sola delincuencia desde el control de capas.
 
 ### Limitaciones
 

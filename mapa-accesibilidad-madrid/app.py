@@ -386,6 +386,12 @@ if show_security and travel_mode == "Andando" and (polys or drive_band_gdfs or s
             clipped = clipped[(~clipped.geometry.is_empty) & (clipped.geometry.area > 5_000)]
             security_gdf = clipped.to_crs(config.CRS_WGS84)
 
+# Score combinado (50% accesibilidad andando + 50% seguridad) sobre los mismos polígonos.
+score_gdf = None
+walk_union = polys[max(polys)].to_crs(config.CRS_METRIC).geometry.union_all() if polys and len(stations) else None
+if security_gdf is not None and len(security_gdf):
+    score_gdf = seguridad.combined_score(security_gdf, walk_union, max(polys) if polys else config.SETTINGS.walk_times_min[-1])
+
 tab_map, tab_st, tab_homes, tab_export, tab_info = st.tabs(
     ["Mapa", f"Estaciones ({len(stations)})", "Viviendas", "Exportar", "Datos y limitaciones"]
 )
@@ -520,7 +526,8 @@ with tab_map:
     mapping.add_isochrones(m, polys, stations, individual=len(stations) <= MAX_INDIVIDUAL_POLYGONS, label=label)
     if overlaps is not None:
         mapping.add_overlaps(m, overlaps, overlap_minutes)
-    mapping.add_security(m, security_gdf)
+    mapping.add_security(m, security_gdf, show=score_gdf is None)
+    mapping.add_score(m, score_gdf, max(polys) if polys else config.SETTINGS.walk_times_min[-1])
     acc = access_all[access_all["station_id"].isin(stations["station_id"])]
     mapping.add_stations(m, stations, acc)
     if scope_kind == SCOPE_DRIVE:
@@ -529,6 +536,8 @@ with tab_map:
     mapping.add_legend(m, list(polys) or times, overlaps is not None and len(overlaps) > 0)
     if security_gdf is not None:
         mapping.add_security_legend(m)
+    if score_gdf is not None:
+        mapping.add_score_legend(m)
     mapping.finish(m)
     if len(stations):
         b = stations.total_bounds
