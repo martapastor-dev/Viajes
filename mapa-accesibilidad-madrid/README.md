@@ -66,6 +66,22 @@ validado; los servicios (supermercados, salud, colegios, zonas verdes) quedan pa
   valor típico por tipo de vía). El factor de tráfico multiplica los tiempos.
 - **Viviendas**: como la red peatonal es simétrica, se reutiliza el alcance de cada estación. No hace
   falta otro cálculo por vivienda.
+- **Delincuencia (capa opcional)**: solo se pinta dentro de las zonas con acceso a transporte y usa el
+  ámbito por defecto más los polígonos de las áreas andando visibles en cada momento.
+  - *Corona*: *Hechos conocidos de infracciones penales por tipología* del Ministerio del Interior (vía
+    datos abiertos de la Comunidad de Madrid), por municipio de más de 20.000 habitantes (los demás se
+    muestran en gris, "sin datos"). Se agregan los últimos tres años cerrados (`SEGURIDAD_YEARS`) en
+    familias: patrimonio (hurtos, robos con fuerza en domicilios y en general), violencia (robos con
+    violencia e intimidación, lesiones y riña, homicidios) y drogas (tráfico), más otras tipologías.
+  - *Madrid capital*: el ayuntamiento no publica delitos por barrio ni por distrito. Se usa la
+    estadística de actuaciones de la Policía Municipal (**personas detenidas o imputadas, por distrito y
+    mes**, no denuncias): es un **proxy** de la seguridad del distrito, no la criminalidad registrada.
+    Cada barrio hereda el valor de su distrito.
+  - Las tasas se calculan por 1.000 habitantes y año (padrón del INE por municipio y población por
+    distrito del Ayuntamiento de Madrid, últimos datos publicados). El índice (0-100, cuanto mayor más
+    incidencia) es el percentil dentro de cada fuente por separado (capital y corona no se mezclan).
+    Las geometrías son los barrios y distritos oficiales del geoportal del Ayuntamiento de Madrid
+    (WGS84); los municipios usan los mismos límites OSM que el resto del pipeline.
 
 ### Limitaciones
 
@@ -86,6 +102,7 @@ src/accesibilidad/
   isochrones.py                alcance por estación, polígonos, caché, círculos y solapes
   drive.py                     ámbito por tiempo en coche
   housing.py                   importación de viviendas, accesibilidad e indicador experimental
+  seguridad.py                 descarga y agregación de datos de delincuencia (corona y capital)
   mapping.py                   capas Folium
   pipeline.py                  proceso de preparación de datos
 tests/                         pruebas (pytest)

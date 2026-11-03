@@ -205,6 +205,100 @@ class _ZoomLabels(folium.MacroElement):
     )
 
 
+# Colores del índice de seguridad (0-100, de menor a mayor incidencia).
+SECURITY_STOPS = [(0, "#1a9850"), (40, "#fee08b"), (70, "#f46d43"), (100, "#a50026")]
+
+
+def security_color(index: float | None) -> str:
+    if index is None or index != index:
+        return "#bdbdbd"  # gris: sin datos
+    for (v0, c0), (v1, c1) in zip(SECURITY_STOPS, SECURITY_STOPS[1:]):
+        if index <= v1:
+            t = (index - v0) / max(v1 - v0, 1e-9)
+            return _lerp_color(c0, c1, t)
+    return SECURITY_STOPS[-1][1]
+
+
+def _lerp_color(c0: str, c1: str, t: float) -> str:
+    a = [int(c0[i : i + 2], 16) for i in (1, 3, 5)]
+    b = [int(c1[i : i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(x + (y - x) * t):02x}" for x, y in zip(a, b))
+
+
+def _security_popup(props: dict) -> str:
+    name = html.escape(str(props.get("barrio") or props.get("municipality") or "?"))
+    kind = "Barrio" if props.get("kind") == "barrio" else "Municipio"
+    district = props.get("district")
+    pop = props.get("population")
+    pop_txt = f"{pop:,.0f}".replace(",", ".") if pop == pop and pop else "-"
+    lines = [f"<b>{name}</b><br>{kind}: {html.escape(str(district or props.get('municipality') or '-'))}"]
+    if pop_txt != "-":
+        lines.append(f"Población ({props.get('years') or '?'}): {pop_txt} hab.")
+    idx = props.get("index")
+    if idx is None or idx != idx:
+        lines.append("<br><i>Sin datos de delincuencia</i> (municipio sin estadística oficial, normalmente &lt;20.000 hab.)")
+        return "<br>".join(lines)
+    lines.append(f"<br><b>Índice de incidencia: {idx:.0f}/100</b> (relativo, mayor = más incidencia)")
+    fams = [
+        ("Patrimonio (hurtos y robos)", "count_pat", "rate_pat"),
+        ("Violencia (robos con violencia, lesiones, homicidios)", "count_viol", "rate_viol"),
+        ("Drogas", "count_drug", "rate_drug"),
+    ]
+    rows = ""
+    for label, ck, rk in fams:
+        c, rate = props.get(ck), props.get(rk)
+        if c is None or c != c:
+            continue
+        rate_txt = f"{rate:.1f}/1.000 hab/año" if rate == rate else "-"
+        rows += f"<tr><td>{label}</td><td>{c:,.0f}</td><td>{rate_txt}</td></tr>".replace(",", ".")
+    if rows:
+        lines.append(
+            f"<br><table style='border-collapse:collapse;font-size:11px'>"
+            f"<tr><th style='text-align:left'>Familia ({props.get('years') or ''})</th>"
+            f"<th>Total</th><th>Tasa anual</th></tr>{rows}</table>"
+        )
+    if props.get("kind") == "barrio":
+        lines.append(
+            "<br><i>Madrid capital: el ayuntamiento no publica delitos por barrio; "
+            "se muestra el valor de su distrito (personas detenidas/imputadas, proxy).</i>"
+        )
+    else:
+        lines.append("<br><i>Hechos conocidos por tipología penal (Ministerio del Interior).</i>")
+    return "<br>".join(lines)
+
+
+def add_security(m: folium.Map, gdf: gpd.GeoDataFrame) -> None:
+    """Coropleta del índice de seguridad recortada a las zonas con acceso a transporte."""
+    if gdf is None or gdf.empty:
+        return
+    fg = folium.FeatureGroup(name="Delincuencia (últimos 3 años)", show=True)
+    for _, row in gdf.iterrows():
+        style = {"color": "#333", "weight": 0.6, "fillColor": security_color(row.get("index")), "fillOpacity": 0.45}
+        folium.GeoJson(
+            row.geometry.__geo_interface__,
+            style_function=lambda _, s=style: s,
+            popup=folium.Popup(_security_popup(row.to_dict()), max_width=320),
+            tooltip=html.escape(str(row.get("barrio") or row.get("municipality") or "")),
+        ).add_to(fg)
+    fg.add_to(m)
+
+
+def add_security_legend(m: folium.Map) -> None:
+    stops = "".join(
+        f'<span style="display:inline-block;width:14px;height:14px;background:{c};margin-right:2px"></span>'
+        for _, c in SECURITY_STOPS
+    )
+    legend = (
+        '<div style="position:fixed;bottom:24px;right:12px;z-index:9999;background:white;padding:8px 10px;'
+        'border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:12px">'
+        f"<b>Delincuencia</b><br>{stops}<br>"
+        '<span style="background:#bdbdbd;width:14px;height:14px;display:inline-block;margin-right:6px"></span>sin datos'
+        '<div style="margin-top:4px;color:#666">Índice relativo 0-100 (capital y corona por separado); '
+        "capital = proxy policial por distrito</div></div>"
+    )
+    m.get_root().html.add_child(folium.Element(legend))
+
+
 def add_neighbourhoods(m: folium.Map, places: gpd.GeoDataFrame) -> None:
     """Etiquetas de texto con los nombres de barrio; las menores aparecen al acercar el zoom."""
     if places is None or places.empty:

@@ -15,7 +15,7 @@ import geopandas as gpd
 import pandas as pd
 import pyarrow.parquet as pq
 
-from . import config, download, drive, graph, isochrones, osm, transit
+from . import config, download, drive, graph, isochrones, osm, seguridad, transit
 
 log = logging.getLogger("accesibilidad")
 
@@ -68,6 +68,14 @@ def step_assign_municipalities() -> gpd.GeoDataFrame:
     stations["in_region"] = stations.to_crs(config.CRS_METRIC).geometry.distance(region) <= REGION_MARGIN_M
     stations.to_parquet(processed(STATIONS_FILE))
     return stations
+
+
+def step_seguridad(force: bool) -> None:
+    """Descarga y procesa la capa de seguridad (barrios/distritos de Madrid y municipios de la corona)."""
+    try:
+        seguridad.build(force=force)
+    except Exception as exc:  # noqa: BLE001 - la capa es opcional; el resto del pipeline no depende de ella
+        log.warning("No se pudo preparar la capa de seguridad: %s", exc)
 
 
 def step_reach(force: bool) -> None:
@@ -129,6 +137,7 @@ def run(force: bool = False, precompute: bool = True) -> None:
     step_transit(force)
     step_osm(force)
     step_assign_municipalities()
+    step_seguridad(force)
     step_reach(force)
     if precompute:
         step_precompute_default()
