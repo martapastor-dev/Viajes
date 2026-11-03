@@ -15,7 +15,7 @@ import streamlit as st
 from shapely.geometry import shape
 from streamlit_folium import st_folium
 
-from accesibilidad import config, drive, graph, housing, isochrones, mapping, pipeline
+from accesibilidad import config, drive, graph, housing, isochrones, mapping, pipeline, seguridad
 
 st.set_page_config(page_title="Accesibilidad a estaciones · Madrid", layout="wide", page_icon="🚇")
 
@@ -42,6 +42,21 @@ def load_transit():
     places_path = pipeline.processed(pipeline.PLACES_FILE)
     places = gpd.read_parquet(places_path) if places_path.exists() else None
     return stations, access, lines, bounds, places, pipeline.load_meta()
+
+
+@st.cache_resource(show_spinner="Preparando la capa de seguridad (primera vez: descarga datos)...")
+def load_security():
+    geoms_path = pipeline.processed(seguridad.GEOMS_FILE)
+    meta_path = pipeline.processed(seguridad.META_FILE)
+    try:
+        if geoms_path.exists():
+            meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+            if meta.get("years") == list(config.SEGURIDAD_YEARS):
+                return gpd.read_file(geoms_path)
+        return seguridad.build()
+    except Exception as exc:  # noqa: BLE001 - la capa es opcional
+        st.warning(f"No se pudo cargar la capa de seguridad: {exc}")
+        return None
 
 
 @st.cache_resource(show_spinner="Cargando la red peatonal y viaria (solo la primera vez)...")
@@ -251,6 +266,12 @@ clip_to_scope = sb.checkbox(
     value=True,
     help="Solo se pintan las partes de las áreas andando que están dentro del ámbito (p. ej. la zona roja en coche).",
 )
+show_security = sb.checkbox(
+    "Delincuencia por barrio/municipio (últimos 3 años)",
+    value=True,
+    help="Coropleta del índice de incidencia solo dentro de las zonas con acceso a transporte. "
+    "Madrid capital: proxy policial por distrito (no hay datos por barrio). Corona: hechos conocidos oficiales por municipio.",
+)
 overlap_minutes = sb.selectbox("Solapes para el tiempo de", times, index=min(1, len(times) - 1)) if show_overlaps else None
 
 # --------------------------------------------------------------------------- filtrado de estaciones
@@ -347,6 +368,29 @@ if travel_mode == "Andando" and len(stations):
         clip_zone = scope_gdf.to_crs(config.CRS_METRIC).geometry.union_all()
         polys = {m: _clip(p, clip_zone) for m, p in polys.items()}
 overlaps = isochrones.overlap_zones(polys[overlap_minutes]) if show_overlaps and overlap_minutes in polys else None
+
+# --------------------------------------------------------------------------- capa de seguridad
+
+security_gdf = None
+if show_security and travel_mode == "Andando" and (polys or drive_band_gdfs or scope_gdf is not None):
+    seg = load_security()
+    if seg is not None and not seg.empty:
+        parts = [g for g in list(drive_band_gdfs.values()) + list(polys.values()) if g is not None and len(g)]
+        zone = None
+        if parts:
+            zone = shapely.union_all([g.to_crs(config.CRS_METRIC).geometry.union_all() for g in parts])
+        elif scope_gdf is not None:
+            zone = scope_gdf.to_crs(config.CRS_METRIC).geometry.union_all()
+        if zone is not None:
+            clipped = seg.to_crs(config.CRS_METRIC).assign(geometry=lambda d: d.geometry.intersection(zone))
+            clipped = clipped[(~clipped.geometry.is_empty) & (clipped.geometry.area > 5_000)]
+            security_gdf = clipped.to_crs(config.CRS_WGS84)
+
+# Score combinado (50% accesibilidad andando + 50% seguridad) sobre los mismos polígonos.
+score_gdf = None
+walk_union = polys[max(polys)].to_crs(config.CRS_METRIC).geometry.union_all() if polys and len(stations) else None
+if security_gdf is not None and len(security_gdf):
+    score_gdf = seguridad.combined_score(security_gdf, walk_union, max(polys) if polys else config.SETTINGS.walk_times_min[-1])
 
 tab_map, tab_st, tab_homes, tab_export, tab_info = st.tabs(
     ["Mapa", f"Estaciones ({len(stations)})", "Viviendas", "Exportar", "Datos y limitaciones"]
@@ -482,12 +526,18 @@ with tab_map:
     mapping.add_isochrones(m, polys, stations, individual=len(stations) <= MAX_INDIVIDUAL_POLYGONS, label=label)
     if overlaps is not None:
         mapping.add_overlaps(m, overlaps, overlap_minutes)
+    mapping.add_security(m, security_gdf, show=score_gdf is None)
+    mapping.add_score(m, score_gdf, max(polys) if polys else config.SETTINGS.walk_times_min[-1])
     acc = access_all[access_all["station_id"].isin(stations["station_id"])]
     mapping.add_stations(m, stations, acc)
     if scope_kind == SCOPE_DRIVE:
         mapping.add_origin(m, origin_lat, origin_lon, origin_name)
     mapping.add_housing(m, homes_gdf)
     mapping.add_legend(m, list(polys) or times, overlaps is not None and len(overlaps) > 0)
+    if security_gdf is not None:
+        mapping.add_security_legend(m)
+    if score_gdf is not None:
+        mapping.add_score_legend(m)
     mapping.finish(m)
     if len(stations):
         b = stations.total_bounds
@@ -572,6 +622,15 @@ with tab_info:
   Licencia: [{config.CRTM_LICENSE_URL}]({config.CRTM_LICENSE_URL}).
 - Red peatonal, red viaria y límites municipales: © colaboradores de OpenStreetMap (licencia ODbL), extracto de
   Geofabrik para la Comunidad de Madrid del {meta.get("osm_extract_mtime", "?")}.
+- Límites de barrios y distritos de Madrid: Geoportal de Datos Espaciales del Ayuntamiento de Madrid (datos abiertos).
+- Población: padrón municipal del INE vía datos abiertos de la Comunidad de Madrid ({config.SEGURIDAD_YEARS[-1]}) y
+  población por distrito/barrio del Ayuntamiento de Madrid (fecha más reciente publicada).
+- Delincuencia (años {", ".join(map(str, config.SEGURIDAD_YEARS))}):
+  - Corona: *Hechos conocidos de infracciones penales por tipología penal* del Ministerio del Interior, vía datos
+    abiertos de la Comunidad de Madrid (solo municipios de más de 20.000 habitantes).
+  - Madrid capital: actuaciones de la Policía Municipal del Ayuntamiento de Madrid (personas detenidas/imputadas por
+    distrito y mes). **Proxy**: no existen datos oficiales de delitos por barrio ni por distrito; cada barrio muestra
+    el valor de su distrito.
 - Última preparación de datos: {meta.get("updated", "?")}.
 
 **Método**

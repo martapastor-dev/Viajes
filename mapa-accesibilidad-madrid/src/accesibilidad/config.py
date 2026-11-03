@@ -99,8 +99,8 @@ class Origin:
 # Punto de referencia por defecto del ámbito "a X minutos en coche".
 DEFAULT_ORIGIN = Origin("CGS (Ciudad Financiera Banco Santander)", 40.3930154, -3.8691104)
 # Bandas del ámbito en coche al punto de referencia por defecto, en minutos.
-DEFAULT_DRIVE_BANDS = (20, 30, 35)
-DEFAULT_DRIVE_MINUTES = 35
+DEFAULT_DRIVE_BANDS = (20, 30, 35, 40)
+DEFAULT_DRIVE_MINUTES = 40
 
 
 @dataclass(frozen=True)
@@ -126,6 +126,9 @@ class TrafficProfile:
 RUSH_HOUR = TrafficProfile()
 DEFAULT_EXCLUDED_MUNICIPALITIES = ["Alcorcón", "Getafe", "Leganés", "Móstoles"]
 DEFAULT_EXCLUDED_STATIONS = ["La Fortuna"]
+
+# Capa de seguridad: años completos usados (los tres más recientes con datos cerrados).
+SEGURIDAD_YEARS = (2023, 2024, 2025)
 
 
 @dataclass(frozen=True)
