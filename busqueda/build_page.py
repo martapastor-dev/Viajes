@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Merge fc_ok + pisos_ok -> items.json -> casas/index.html"""
+import json, re, html, os
+
+HOME = os.path.dirname(os.path.abspath(__file__))
+OUT = HOME
+names = json.load(open(os.path.join(HOME, 'stop_names.json')))
+
+fc = json.load(open(os.path.join(HOME, 'fc_ok.json')))
+pi = json.load(open(os.path.join(HOME, 'pisos_ok.json')))
+
+def close(a, b):
+    return abs(a['lat'] - b['lat']) < 0.0006 and abs(a['lon'] - b['lon']) < 0.0008
+
+items = []
+for r in fc:
+    items.append({'src': 'Fotocasa', 'price': r['price'], 'eff': r['eff'], 'rate': r['rate'],
+                  'agency': r.get('agency'), 'm2': r['surface'], 'eurm2': r['eurm2'],
+                  'floor': r['floor'], 'elev': r['elev'], 'heat': r['heat'],
+                  'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'],
+                  'lat': r['lat'], 'lon': r['lon'],
+                  'sta': names.get(r.get('sta'), r.get('sta')), 'url': r['url'], 'rooms': r.get('rooms')})
+for r in pi:
+    if any(r['price'] == f['price'] and close(r, f) for f in fc):
+        continue
+    ag = (r.get('agency') or '')
+    rate = 0.0484 if 'redpiso' in ag.lower() else (0.0363 if ag else 0.0)
+    eff = round(r['price'] * (1 + rate))
+    items.append({'src': 'Pisos', 'price': r['price'], 'eff': eff, 'rate': rate,
+                  'agency': ag or None, 'm2': r['surface'], 'eurm2': round(eff / r['surface']),
+                  'floor': r['planta'] if r['planta'] is not None else r.get('floor'),
+                  'elev': r['elev'], 'heat': r['heat'], 'hood': r['hood'] or '',
+                  'walk': r['walk'], 'tp': r['tp'], 'sta': names.get(r.get('sta'), r.get('sta')),
+                  'lat': r['lat'], 'lon': r['lon'],
+                  'url': r['url'], 'rooms': None})
+
+items.sort(key=lambda x: x['eurm2'])
+json.dump(items, open(os.path.join(OUT, 'items.json'), 'w'), ensure_ascii=False)
+
+tpl = open(os.path.join(OUT, 'index_template.html')).read()
+zone = open(os.path.join(OUT, 'zona_overlay.json')).read()
+page = tpl.replace('const D = DATA;', 'const D = ' + json.dumps(items, ensure_ascii=False) + ';')
+page = page.replace('const ZONA = ZONE;', 'const ZONA = ' + zone + ';')
+page = page.replace('FECHA_ACTUALIZACION', __import__('datetime').datetime.now().strftime('%d/%m/%Y'))
+open(os.path.join(OUT, 'index.html'), 'w').write(page)
+print(len(items), 'items ->', os.path.join(OUT, 'index.html'))

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casas Madrid — búsqueda Hestia</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#FCFCFC;--surface:#FFFFFF;--text:#191919;--muted:rgba(25,25,25,.56);
+--border:rgba(0,0,0,.10);--accent:#317CFF;--accent-fg:#fff;--radius:6px;
+--ok:#1a7f37;--warn:#9a6700;--font:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.45}
+header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;z-index:9}
+h1{font-size:17px;font-weight:600}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.controls input,.controls select{font:inherit;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);min-width:0}
+.controls input{flex:1;min-width:140px}
+main{padding:12px 16px;max-width:880px;margin:0 auto}
+.group{margin:18px 0 6px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);padding-bottom:4px}
+.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin:8px 0;text-decoration:none;color:var(--text)}
+.card:active{opacity:.7}
+.row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.price{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.eurm2{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row2{margin-top:3px;font-size:13px}
+.row3{margin-top:4px;font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.tag{font-size:11px;padding:1px 6px;border:1px solid var(--border);border-radius:99px}
+.no{color:var(--warn)}
+footer{padding:20px 16px;color:var(--muted);font-size:12px;text-align:center}
+a{color:var(--accent)}
+.viewbtns{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.viewbtns button{font:inherit;padding:7px 14px;border:0;background:var(--surface);color:var(--text);cursor:pointer}
+.viewbtns button.on{background:var(--accent);color:var(--accent-fg)}
+#map{height:70vh;border:1px solid var(--border);border-radius:var(--radius);margin:12px 0}
+.count{color:var(--muted);font-weight:400}
+</style>
+</head>
+<body>
+<header>
+<h1>Casas en Madrid dentro del mapa Hestia</h1>
+<div class="sub" id="sub"></div>
+<div class="sub">Coste real = anuncio + comisión que pagas a la agencia (Redpiso +4,84%, otras +3,63%, particular 0%). Actualizado el FECHA_ACTUALIZACION.</div>
+<div class="controls">
+<input id="q" type="search" placeholder="Filtrar por barrio…">
+<select id="sort">
+<option value="eurm2">€/m² (menor primero)</option>
+<option value="eff">Precio efectivo (menor primero)</option>
+<option value="m2">m² (mayor primero)</option>
+<option value="walk">Minutos andando a metro</option>
+</select>
+<select id="src"><option value="">Fotocasa + Pisos</option><option value="Fotocasa">Solo Fotocasa</option><option value="Pisos">Solo Pisos</option></select>
+<div class="viewbtns"><button id="vlist" class="on">Lista</button><button id="vmap">Mapa</button></div>
+</div>
+</header>
+<main id="list"></main>
+<div id="map" style="display:none"></div>
+<footer>Búsqueda generada por <a href="https://app.devin.ai/sessions/73e74a1cdda64071ad572a37eec816f2">Devin</a> · filtros: ≤305.882€ efectivos, ≥70 m², ≤3.800 €/m², sin bajos/semisótanos, sin ocupadas/nuda propiedad/alquiladas, ascensor ≥3ª planta, −10.000€ sin calefacción, ≤25' coche a Boadilla (hora punta), ≤40' TP a Alonso Martínez, ≤12' andando a metro/cercanías.</footer>
+<script>
+const D = DATA;
+const ZONA = ZONE;
+let map=null, layer=null;
+function showMap(){
+  document.getElementById('list').style.display='none';
+  document.getElementById('map').style.display='block';
+  document.getElementById('vmap').classList.add('on');
+  document.getElementById('vlist').classList.remove('on');
+  if(!map){
+    map=L.map('map').setView([40.36,-3.78],11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+    const polys=ZONA.carType==='MultiPolygon'?ZONA.car:[ZONA.car];
+    for(const poly of polys){
+      const rings=poly.map(r=>r.map(p=>[p[1],p[0]]));
+      L.polygon(rings,{color:'#317CFF',weight:1.5,fillOpacity:0.03}).addTo(map);
+    }
+    for(const cell of ZONA.cells){
+      L.rectangle([[cell[0],cell[1]],[cell[2],cell[3]]],{color:'#317CFF',weight:0,fillOpacity:0.10}).addTo(map);
+    }
+    L.marker([ZONA.cgs[1],ZONA.cgs[0]]).addTo(map).bindTooltip('CGS (Boadilla)');
+    L.marker([ZONA.am[1],ZONA.am[0]]).addTo(map).bindTooltip('Alonso Martínez');
+    layer=L.layerGroup().addTo(map);
+  }
+  setTimeout(()=>map.invalidateSize(),50);
+  renderMarkers();
+}
+function showList(){
+  document.getElementById('map').style.display='none';
+  document.getElementById('list').style.display='';
+  document.getElementById('vlist').classList.add('on');
+  document.getElementById('vmap').classList.remove('on');
+}
+function renderMarkers(){
+  if(!layer) return;
+  layer.clearLayers();
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const src=document.getElementById('src').value;
+  const items=D.filter(x=>(!src||x.src===src)&&(!q||x.hood.toLowerCase().includes(q)));
+  for(const x of items){
+    if(x.lat==null) continue;
+    const c=x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37');
+    const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
+    m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${x.hood} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${x.sta||''} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM<br><a href="${x.url}" target="_blank">Ver anuncio (${x.src})</a>`);
+    m.addTo(layer);
+  }
+}
+const list = document.getElementById('list');
+const sub = document.getElementById('sub');
+const fmt = n => n.toLocaleString('es-ES');
+const floorTxt = f => f===0?'bajo':f===0.5?'entreplanta':f>=11?'ático':(f?f+'ª':'—');
+function render(){
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const s = document.getElementById('sort').value;
+  const src = document.getElementById('src').value;
+  let items = D.filter(x => (!src || x.src===src) && (!q || x.hood.toLowerCase().includes(q)));
+  items.sort((a,b)=>(a[s]??9999)-(b[s]??9999));
+  sub.textContent = items.length + ' viviendas · ' + new Set(items.map(x=>x.hood)).size + ' barrios';
+  let html='', lastHood='\u0000';
+  for(const x of items){
+    if(x.hood!==lastHood){html+=`<div class="group">${x.hood||'—'}</div>`;lastHood=x.hood;}
+    html+=`<a class="card" href="${x.url}" target="_blank" rel="noopener">
+      <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
+      <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'}</div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${x.sta||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${x.src}</span>${x.rate?`<span class="tag">${x.agency||'agencia'} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}</div>
+    </a>`;
+  }
+  list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';
+  if(map) renderMarkers();
+}
+for(const id of ['q','sort','src']) document.getElementById(id).addEventListener('input', render);
+document.getElementById('vlist').addEventListener('click', showList);
+document.getElementById('vmap').addEventListener('click', showMap);
+render();
+</script>
+</body>
+</html>
