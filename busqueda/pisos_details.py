@@ -10,7 +10,7 @@ D = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(D, 'pisos_details.json')
 MAX_AGE = 5 * 86400          # refrescar si la ficha tiene >5 días
 
-NO_POSES = re.compile(r'okupad|ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|con inquilino|inquilinos|alquilad[ao]\b|vivienda alquilada|pleno dominio|subasta|rentabilidad|para inversores', re.I)
+NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|con inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -57,7 +57,7 @@ todo = []
 for c in cands:
     p = prev.get(c['id'])
     if p and not p.get('detail_err') and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price']:
-        c.update(p)
+        c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts') if k in p})
     else:
         todo.append(c)
 

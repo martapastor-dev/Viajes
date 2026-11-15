@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Scrape pisos.com madrid_capital list pages en paralelo; keep zone+price+size candidates."""
-import re, json
+import re, json, sys, time
 import requests, os
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
@@ -57,9 +57,19 @@ def in_zone(lat, lon):
 sess = requests.Session(); sess.headers.update(UA)
 
 def fetch_page(page):
+    for attempt in range(3):
+        try:
+            r = sess.get(LIST.format(page), timeout=30)
+            if r.status_code != 200:
+                time.sleep(2 * (attempt + 1)); continue
+            break
+        except Exception:
+            if attempt == 2:
+                return page, None
+            time.sleep(2 * (attempt + 1))
+    else:
+        return page, None
     try:
-        r = sess.get(LIST.format(page), timeout=30)
-        if r.status_code != 200: return page, []
         soup = BeautifulSoup(r.text, 'html.parser')
         cards = soup.select('div.ad-preview')
         geo = {}
@@ -99,17 +109,23 @@ def fetch_page(page):
                         'agency': ag.get_text(strip=True) if ag else None})
         return page, out
     except Exception:
-        return page, []
+        return page, None
 
 cands = []
 seen = set()
+failed = []
 with ThreadPoolExecutor(max_workers=8) as ex:
     for page, items in ex.map(fetch_page, range(1, MAXPAGES + 1)):
+        if items is None:
+            failed.append(page); continue
         for c in items:
             if c['id'] in seen: continue
             seen.add(c['id']); cands.append(c)
         if page % 40 == 0:
             print(f'page {page}, candidates {len(cands)}', flush=True)
+
+if failed:
+    sys.exit(f'páginas fallidas tras reintentos: {failed} — no se sobreescribe pisos_cands.json')
 
 print('list candidates:', len(cands))
 json.dump(cands, open(os.path.join(D,'pisos_cands.json'), 'w'), ensure_ascii=False)

@@ -101,13 +101,14 @@ function renderMarkers(){
     if(x.lat==null) continue;
     const c=x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37');
     const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
-    m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${x.hood} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${x.sta||''} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM<br><a href="${x.url}" target="_blank">Ver anuncio (${x.src})</a>`);
+    m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>`);
     m.addTo(layer);
   }
 }
 const list = document.getElementById('list');
 const sub = document.getElementById('sub');
 const fmt = n => n.toLocaleString('es-ES');
+const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const floorTxt = f => f===0?'bajo':f===0.5?'entreplanta':f>=11?'ático':(f?f+'ª':'—');
 function render(){
   const q = document.getElementById('q').value.trim().toLowerCase();
@@ -118,11 +119,11 @@ function render(){
   sub.textContent = items.length + ' viviendas · ' + new Set(items.map(x=>x.hood)).size + ' barrios';
   let html='', lastHood='\u0000';
   for(const x of items){
-    if(x.hood!==lastHood){html+=`<div class="group">${x.hood||'—'}</div>`;lastHood=x.hood;}
-    html+=`<a class="card" href="${x.url}" target="_blank" rel="noopener">
+    if(x.hood!==lastHood){html+=`<div class="group">${esc(x.hood)||'—'}</div>`;lastHood=x.hood;}
+    html+=`<a class="card" href="${esc(x.url)}" target="_blank" rel="noopener">
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${x.sta||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${x.src}</span>${x.rate?`<span class="tag">${x.agency||'agencia'} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}</div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${esc(x.src)}</span>${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}</div>
     </a>`;
   }
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';

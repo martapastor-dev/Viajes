@@ -110,24 +110,33 @@ sess = requests.Session(); sess.headers.update(UA)
 
 def fetch_page(page):
     url = f'{BASE}/es/comprar/viviendas/madrid-capital/todas-las-zonas/l/{page}?maxPrice={int(PRICE_MAX)}&minSurface={SURF_MIN}&sortType=publicationDate&sortOrderDesc=true'
-    try:
-        r = sess.get(url, timeout=30)
-        if r.status_code != 200:
-            print('HTTP', r.status_code, 'page', page); return page, None, []
-        m = re.search(r'<script type="application/json" id="__initial_props__">(.*?)</script>', r.text, re.S)
-        if not m: print('no props page', page); return page, None, []
-        res = json.loads(m.group(1))['initialSearch']['result']
-        return page, res['count'], res.get('resultsV2', {}).get('items') or []
-    except Exception as e:
-        print('err page', page, e); return page, None, []
+    for attempt in range(3):
+        try:
+            r = sess.get(url, timeout=30)
+            if r.status_code != 200:
+                time.sleep(2 * (attempt + 1)); continue
+            m = re.search(r'<script type="application/json" id="__initial_props__">(.*?)</script>', r.text, re.S)
+            if not m:
+                time.sleep(2 * (attempt + 1)); continue
+            res = json.loads(m.group(1))['initialSearch']['result']
+            return page, res['count'], res.get('resultsV2', {}).get('items') or []
+        except Exception as e:
+            if attempt == 2: print('err page', page, e)
+            time.sleep(2 * (attempt + 1))
+    return page, None, []
 
 page = 1
 _, count, items = fetch_page(1)
+if count is None:
+    sys.exit('página 1 de fotocasa falló — no se sobreescribe fc_raw.json')
 print('total', count)
 npages = math.ceil(count/31)
 with ThreadPoolExecutor(max_workers=6) as ex:
-    rest = ex.map(fetch_page, range(2, npages + 1))
-    pages_items = [items] + [its for _, _, its in rest]
+    results = [(1, count, items)] + list(ex.map(fetch_page, range(2, npages + 1)))
+failed = [p for p, c, _ in results if c is None]
+if failed:
+    sys.exit(f'páginas fallidas tras reintentos: {failed} — no se sobreescribe fc_raw.json')
+pages_items = [its for _, _, its in results]
 for items in pages_items:
     for it in items:
         iid = it['id']
@@ -149,7 +158,7 @@ for items in pages_items:
             'ubic': (it.get('address') or {}).get('ubication'),
             'agency': it.get('clientAlias'), 'clientType': it.get('clientType'),
             'url': BASE + (it.get('detail', {}).get('es-ES') or ''),
-            'desc': (it.get('description') or '')[:1500],
+            'desc': (it.get('description') or ''),
         }
         out.append(rec)
 
