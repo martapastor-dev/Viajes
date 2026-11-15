@@ -11,7 +11,7 @@ CACHE = os.path.join(D, 'pisos_details.json')
 MAX_AGE = 5 * 86400          # refrescar si la ficha tiene >5 días
 RULE_V = 2                    # versión de las reglas: subir al cambiar NO_POSES
 
-NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
+NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -58,7 +58,7 @@ todo = []
 for c in cands:
     p = prev.get(c['id'])
     if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price']:
-        c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts') if k in p})
+        c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv') if k in p})
     else:
         todo.append(c)
 
