@@ -36,6 +36,13 @@ a{color:var(--accent)}
 .viewbtns button.on{background:var(--accent);color:var(--accent-fg)}
 #map{height:70vh;border:1px solid var(--border);border-radius:var(--radius);margin:12px 0}
 .count{color:var(--muted);font-weight:400}
+.card.fav{border-left:3px solid #e3a008}
+.card.del{opacity:.45}
+.acts{margin-left:auto;display:flex;gap:6px}
+.act{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:13px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6}
+.act.fav{color:#b8860b;border-color:#e3a008;background:#fff7e0}
+.tgl{font:inherit;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer}
+.tgl.on{background:#fff7e0;border-color:#e3a008}
 </style>
 </head>
 <body>
@@ -52,6 +59,7 @@ a{color:var(--accent)}
 <option value="walk">Minutos andando a metro</option>
 </select>
 <select id="src"><option value="">Fotocasa + Pisos</option><option value="Fotocasa">Solo Fotocasa</option><option value="Pisos">Solo Pisos</option></select>
+<button class="tgl" id="favs">★ favoritas</button><button class="tgl" id="showdel">ver ocultos</button>
 <div class="viewbtns"><button id="vlist" class="on">Lista</button><button id="vmap">Mapa</button></div>
 </div>
 </header>
@@ -61,6 +69,10 @@ a{color:var(--accent)}
 <script>
 const D = DATA;
 const ZONA = ZONE;
+const favs=new Set(JSON.parse(localStorage.getItem('hestia_fav')||'[]'));
+const dels=new Set(JSON.parse(localStorage.getItem('hestia_del')||'[]'));
+const save=()=>{localStorage.setItem('hestia_fav',JSON.stringify([...favs]));localStorage.setItem('hestia_del',JSON.stringify([...dels]))};
+let showDel=false, onlyFav=false;
 let map=null, layer=null;
 function showMap(){
   document.getElementById('list').style.display='none';
@@ -91,15 +103,16 @@ function showList(){
   document.getElementById('vlist').classList.add('on');
   document.getElementById('vmap').classList.remove('on');
 }
+const visible=x=>(!dels.has(x.url)||showDel)&&(!onlyFav||favs.has(x.url));
 function renderMarkers(){
   if(!layer) return;
   layer.clearLayers();
   const q=document.getElementById('q').value.trim().toLowerCase();
   const src=document.getElementById('src').value;
-  const items=D.filter(x=>(!src||x.src===src)&&(!q||x.hood.toLowerCase().includes(q)));
+  const items=D.filter(x=>visible(x)&&(!src||x.src===src)&&(!q||x.hood.toLowerCase().includes(q)));
   for(const x of items){
     if(x.lat==null) continue;
-    const c=x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37');
+    const c=favs.has(x.url)?'#e3a008':(x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37'));
     const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
     m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>`);
     m.addTo(layer);
@@ -114,22 +127,35 @@ function render(){
   const q = document.getElementById('q').value.trim().toLowerCase();
   const s = document.getElementById('sort').value;
   const src = document.getElementById('src').value;
-  let items = D.filter(x => (!src || x.src===src) && (!q || x.hood.toLowerCase().includes(q)));
-  items.sort((a,b)=>(a[s]??9999)-(b[s]??9999));
+  let items = D.filter(x => visible(x) && (!src || x.src===src) && (!q || x.hood.toLowerCase().includes(q)));
+  items.sort((a,b)=>((favs.has(b.url)?1:0)-(favs.has(a.url)?1:0))||((a[s]??9999)-(b[s]??9999)));
+  document.getElementById('favs').textContent='★ favoritas '+favs.size;
+  document.getElementById('showdel').textContent='ocultos '+dels.size;
   sub.textContent = items.length + ' viviendas · ' + new Set(items.map(x=>x.hood)).size + ' barrios';
   let html='', lastHood='\u0000';
   for(const x of items){
     if(x.hood!==lastHood){html+=`<div class="group">${esc(x.hood)||'—'}</div>`;lastHood=x.hood;}
-    html+=`<a class="card" href="${esc(x.url)}" target="_blank" rel="noopener">
+    const isFav=favs.has(x.url), isDel=dels.has(x.url);
+    html+=`<a class="card${isFav?' fav':''}${isDel?' del':''}" href="${esc(x.url)}" target="_blank" rel="noopener">
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${esc(x.src)}</span>${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}</div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${esc(x.src)}</span>${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
     </a>`;
   }
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';
   if(map) renderMarkers();
 }
 for(const id of ['q','sort','src']) document.getElementById(id).addEventListener('input', render);
+list.addEventListener('click', e=>{
+  const b=e.target.closest('.act'); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const u=b.dataset.u;
+  if(b.dataset.k==='fav'){favs.has(u)?favs.delete(u):favs.add(u);}
+  else{dels.has(u)?dels.delete(u):dels.add(u);}
+  save(); render();
+});
+document.getElementById('favs').addEventListener('click',()=>{onlyFav=!onlyFav;document.getElementById('favs').classList.toggle('on',onlyFav);render();});
+document.getElementById('showdel').addEventListener('click',()=>{showDel=!showDel;document.getElementById('showdel').classList.toggle('on',showDel);render();});
 document.getElementById('vlist').addEventListener('click', showList);
 document.getElementById('vmap').addEventListener('click', showMap);
 render();
