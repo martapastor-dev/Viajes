@@ -52,6 +52,7 @@ a{color:var(--accent)}
 <div class="sub">Coste real = anuncio + comisión que pagas a la agencia (Redpiso +4,84%, otras +3,63%, particular 0%). Actualizado el FECHA_ACTUALIZACION.</div>
 <div class="controls">
 <input id="q" type="search" placeholder="Filtrar por barrio…">
+<select id="sta"><option value="">Todas las paradas</option></select>
 <select id="sort">
 <option value="eurm2">€/m² (menor primero)</option>
 <option value="eff">Precio efectivo (menor primero)</option>
@@ -115,7 +116,8 @@ function renderMarkers(){
   layer.clearLayers();
   const q=document.getElementById('q').value.trim().toLowerCase();
   const src=document.getElementById('src').value;
-  const items=D.filter(x=>visible(x)&&(!src||x.src===src)&&(!q||x.hood.toLowerCase().includes(q)));
+  const staSel=document.getElementById('sta').value;
+  const items=D.filter(x=>visible(x)&&(!src||x.src===src)&&(!staSel||x.sta===staSel)&&(!q||x.hood.toLowerCase().includes(q)));
   for(const x of items){
     if(x.lat==null) continue;
     const c=favs.has(x.url)?'#e3a008':(x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37'));
@@ -133,7 +135,8 @@ function render(){
   const q = document.getElementById('q').value.trim().toLowerCase();
   const s = document.getElementById('sort').value;
   const src = document.getElementById('src').value;
-  let items = D.filter(x => visible(x) && (!src || x.src===src) && (!q || x.hood.toLowerCase().includes(q)));
+  const staSel = document.getElementById('sta').value;
+  let items = D.filter(x => visible(x) && (!src || x.src===src) && (!staSel || x.sta===staSel) && (!q || x.hood.toLowerCase().includes(q)));
   items.sort((a,b)=>((favs.has(b.url)?1:0)-(favs.has(a.url)?1:0))||((a[s]??9999)-(b[s]??9999)));
   document.getElementById('favs').textContent='★ favoritas '+favs.size;
   document.getElementById('showdel').textContent='ocultos '+dels.size;
@@ -151,7 +154,12 @@ function render(){
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';
   if(map) renderMarkers();
 }
-for(const id of ['q','sort','src']) document.getElementById(id).addEventListener('input', render);
+{
+  const sel=document.getElementById('sta');
+  const stas=[...new Set(D.map(x=>x.sta).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  for(const st of stas){const o=document.createElement('option');o.value=st;o.textContent=st;sel.appendChild(o);}
+}
+for(const id of ['q','sort','src','sta']) document.getElementById(id).addEventListener('input', render);
 list.addEventListener('click', e=>{
   const b=e.target.closest('.act'); if(!b) return;
   e.preventDefault(); e.stopPropagation();
