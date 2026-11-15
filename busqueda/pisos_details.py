@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Descarga fichas de pisos.com en paralelo, con caché por id en pisos_details.json."""
-import re, json, os, time
+import re, json, os, time, hashlib
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
@@ -9,7 +9,7 @@ UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, 
 D = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(D, 'pisos_details.json')
 MAX_AGE = 5 * 86400          # refrescar si la ficha tiene >5 días
-RULE_V = 2                    # versión de las reglas: subir al cambiar NO_POSES
+RULE_V = hashlib.md5(NO_POSES.pattern.encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
 
