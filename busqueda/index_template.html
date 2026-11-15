@@ -69,9 +69,15 @@ a{color:var(--accent)}
 <script>
 const D = DATA;
 const ZONA = ZONE;
-const favs=new Set(JSON.parse(localStorage.getItem('hestia_fav')||'[]'));
-const dels=new Set(JSON.parse(localStorage.getItem('hestia_del')||'[]'));
-const save=()=>{localStorage.setItem('hestia_fav',JSON.stringify([...favs]));localStorage.setItem('hestia_del',JSON.stringify([...dels]))};
+let favs=new Set(), dels=new Set();
+try{
+  favs=new Set(JSON.parse(localStorage.getItem('hestia_fav')||'[]'));
+  dels=new Set(JSON.parse(localStorage.getItem('hestia_del')||'[]'));
+}catch(e){}
+const save=()=>{try{
+  localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
+  localStorage.setItem('hestia_del',JSON.stringify([...dels]));
+}catch(e){}};
 let showDel=false, onlyFav=false;
 let map=null, layer=null;
 function showMap(){
