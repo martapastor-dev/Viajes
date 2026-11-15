@@ -64,7 +64,7 @@ FLOOR_MAP = {1: -1, 2: -1, 3: 0, 4: 0.5, 5: 0.5, 6: 1, 7: 2, 8: 3, 9: 4, 10: 5,
              11: 6, 12: 7, 13: 8, 14: 9, 15: 10, 21: 11}
 BAD_SUB = {'GROUND_FLOOR', 'SEMI_BASEMENT', 'BASEMENT'}
 LOW_RE = re.compile(r'planta\s+baja|\bbajo\b|semis[oó]tano|s[oó]tano', re.I)
-NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesión|no se puede visitar|(?<!sin )inquilinos?|alquilad[ao]\b|vivienda alquilada|\b\d+\s*[,%]?\s*(de la )?propiedad|subasta|para inversores|inversi[oó]n\b|rentabilidad', re.I)
+NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesión|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|alquilad[ao]\b|vivienda alquilada|\b\d+\s*[,%]?\s*(de la )?propiedad|subasta|para inversores|inversi[oó]n\b|rentabilidad', re.I)
 FLOOR_TXT = re.compile(r'(primer|segund|tercer|cuart|quint|sext|s[eé]ptim|octav|noven|d[eé]cim)[ao]?\s+planta|planta\s+(\d+)|(\d+)[ªº]\s*planta', re.I)
 ORD = {'primer':1,'segund':2,'tercer':3,'cuart':4,'quint':5,'sext':6,'séptim':7,'septim':7,'octav':8,'noven':9,'décim':10,'decim':10}
 ENTREPLANTA = re.compile(r'entreplanta|entresuelo', re.I)
