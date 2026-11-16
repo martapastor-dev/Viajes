@@ -60,9 +60,10 @@ for c in d:
     else:
         dh_ac = AC_NEG.sub(' ', c.get('desc_head') or '')
         has_ac = bool(c.get('ac')) or bool(AC_RE.search(dh_ac))
-        c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5)
         c['ac'] = has_ac
         w, t, s, car = zone_stats(c['lat'], c['lon'])
+        c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5) \
+            - (5 if (car or 0) >= 25 else (2 if (car or 0) > 20 else 0)) - (5 if (t or 0) > 35 else 0)
         c.update({'eff': eff, 'walk': w, 'tp': t, 'sta': s, 'car': car, 'oris': ' '.join(sorted(oris))})
         ok.append(c)
 print('rejected:', rej)

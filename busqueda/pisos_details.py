@@ -67,7 +67,12 @@ def fetch(c):
         if not cal:
             cal = bool(HEAT_RE.search(HEAT_NEG.sub(' ', desc)))
         c['interior'] = bool(INTERIOR.search(INT_NEG.sub(' ', desc)))
-        c['pics'] = len(soup.select('.media-thumbnail')) + (1 if soup.select_one('.carousel__main-photo') else 0)
+        pids = set()
+        for img in soup.select('.media-thumbnail img, .carousel__main-photo img'):
+            pm = re.search(r'_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+                           img.get('src') or img.get('data-src') or '')
+            if pm: pids.add(pm.group(1))
+        c['pics'] = len(pids) or len(soup.select('.media-thumbnail'))
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
                   'desc_head': desc[:400], 'ts': now, 'rv': RULE_V})
     except Exception as e:
