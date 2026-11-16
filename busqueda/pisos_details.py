@@ -37,6 +37,8 @@ def fetch(c):
                 elif re.search(r'(?i)entreplanta|entresuelo', pv): planta = 1
             if 'Ascensor' in label: asc = True
             if 'Calefacci' in label: cal = True
+            if 'Orientaci' in label and val:
+                c['ori'] = val.get_text(strip=True)
         if asc is None:
             asc = 'ascensor' in (soup.find('span', id='vtmExtraVars') or {}).get('data-var', '') \
                   or 'icon-ascensor' in r.text
@@ -48,6 +50,10 @@ def fetch(c):
         desc = desc_el.get_text('\n', strip=True) if desc_el else ''
         bad_occ = bool(NO_POSES.search(desc)) or bool(NO_POSES.search(soup.title.string or ''))
         c.pop('detail_err', None)
+        c.setdefault('ori', '')
+        desc_ori = ' '.join(re.findall(r'(?i)\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b',
+                                       ' '.join(re.findall(r'orientaci[oó]n[^.\n]{0,60}', desc))))
+        if desc_ori and not c['ori']: c['ori'] = desc_ori.lower()
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
                   'desc_head': desc[:400], 'ts': now, 'rv': RULE_V})
     except Exception as e:
@@ -58,7 +64,10 @@ todo = []
 for c in cands:
     p = prev.get(c['id'])
     if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price']:
-        c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv') if k in p})
+        if 'ori' in p:
+            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori') if k in p})
+        else:
+            todo.append(c)  # la ficha en caché es anterior al campo 'ori'
     else:
         todo.append(c)
 

@@ -18,7 +18,7 @@ for r in fc:
                   'agency': r.get('agency'), 'm2': r['surface'], 'eurm2': r['eurm2'],
                   'floor': r['floor'], 'elev': r['elev'], 'heat': r['heat'],
                   'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'],
-                  'lat': r['lat'], 'lon': r['lon'],
+                  'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'sta': names.get(r.get('sta'), r.get('sta')), 'url': r['url'], 'rooms': r.get('rooms')})
 for r in pi:
     if any(r['price'] == f['price'] and close(r, f) for f in fc):
@@ -31,7 +31,7 @@ for r in pi:
                   'floor': r['planta'] if r['planta'] is not None else r.get('floor'),
                   'elev': r['elev'], 'heat': r['heat'], 'hood': r['hood'] or '',
                   'walk': r['walk'], 'tp': r['tp'], 'sta': names.get(r.get('sta'), r.get('sta')),
-                  'lat': r['lat'], 'lon': r['lon'],
+                  'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'url': r['url'], 'rooms': None})
 
 items.sort(key=lambda x: x['eurm2'])

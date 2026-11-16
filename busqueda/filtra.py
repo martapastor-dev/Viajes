@@ -69,6 +69,21 @@ FLOOR_TXT = re.compile(r'(primer|segund|tercer|cuart|quint|sext|s[eé]ptim|octav
 ORD = {'primer':1,'segund':2,'tercer':3,'cuart':4,'quint':5,'sext':6,'séptim':7,'septim':7,'octav':8,'noven':9,'décim':10,'decim':10}
 ENTREPLANTA = re.compile(r'entreplanta|entresuelo', re.I)
 
+ORI_MAP = {1: 'norte', 2: 'noroeste', 3: 'noreste', 4: 'sur', 5: 'sureste',
+           6: 'suroeste', 7: 'este', 8: 'oeste'}
+ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
+ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
+
+def orientations(r):
+    o = set()
+    if r.get('ori'):
+        n = ORI_MAP.get(int(r['ori']))
+        if n: o.add(n)
+    d = r['desc'] or ''
+    for m in ORI_CTX.finditer(d):
+        o.update(w.lower() for w in ORI_WORD.findall(m.group(0)))
+    return o
+
 def floor_of(r):
     f = FLOOR_MAP.get(r['floorfeat'])
     d = r['desc'] or ''
@@ -99,7 +114,9 @@ for r in L:
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
     eurm2 = eff/surf
     has_heat = r['heating'] == 1
-    pmax = PRICE_MAX - (0 if has_heat else 10000)
+    oris = orientations(r)
+    if oris & {'norte', 'noroeste'}: rejects['orient'] = rejects.get('orient', 0) + 1; continue
+    pmax = PRICE_MAX - (0 if has_heat else 10000) - (10000 if 'oeste' in oris else 0)
     if eff > pmax: rejects['precio'] += 1; continue
     if eurm2 > EURM2_MAX: rejects['m2'] += 1; continue
     if r['subtype'] in BAD_SUB: rejects['bajo'] += 1; continue
@@ -112,7 +129,7 @@ for r in L:
         rejects['asc'] += 1; continue
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None)
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
-               'walk': zs[0], 'tp': zs[1], 'sta': zs[2]})
+               'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2]})
 
 ok.sort(key=lambda x: x['eurm2'])
 print('rejects:', rejects)
