@@ -11,7 +11,8 @@ CACHE = os.path.join(D, 'pisos_details.json')
 MAX_AGE = 5 * 86400          # refrescar si la ficha tiene >5 días
 
 NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
-RULE_V = hashlib.md5(NO_POSES.pattern.encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
+ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern).encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -52,7 +53,7 @@ def fetch(c):
         c.pop('detail_err', None)
         c.setdefault('ori', '')
         desc_ori = ' '.join(re.findall(r'(?i)\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b',
-                                       ' '.join(re.findall(r'orientaci[oó]n[^.\n]{0,60}', desc))))
+                                       ' '.join(ORI_CTX.findall(desc))))
         if desc_ori and not c['ori']: c['ori'] = desc_ori.lower()
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
                   'desc_head': desc[:400], 'ts': now, 'rv': RULE_V})
