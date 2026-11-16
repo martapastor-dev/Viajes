@@ -7,6 +7,7 @@ NEGO = 0.85               # precio de compra = valor de mercado del anuncio × 0
 E2 = 3800
 D = os.path.dirname(os.path.abspath(__file__))
 Z = json.load(open(os.path.join(D,'zona_final.json')))
+CART = json.load(open(os.path.join(D,'car_times.json')))
 lats, lons, zone = Z['lats'], Z['lons'], Z['zone']
 nR, nC = len(lats), len(lons)
 dlat = lats[1]-lats[0]; dlon = lons[1]-lons[0]
@@ -20,15 +21,15 @@ def zone_stats(lat, lon):
             if 0 <= rr < nR and 0 <= cc < nC and zone[rr][cc]:
                 dd = dr*dr+dc*dc
                 if best is None or dd < best[0]: best = (dd, rr, cc)
-    if not best: return (None, None, None)
+    if not best: return (None, None, None, None)
     _, rr, cc = best
-    return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc]
+    return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc], CART.get(f'{rr},{cc}')
 
 d = json.load(open(os.path.join(D,'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
-AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+[^.,;\n]{0,15}(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
+AC_NEG = re.compile(r'\b(?:sin|no)\s+(?:aire\s+acondicionado|climatizaci[oó]n)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con)\s+(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(c):
     o = set(w.lower() for w in ORI_WORD.findall(c.get('ori') or ''))
@@ -59,8 +60,8 @@ for c in d:
         has_ac = bool(c.get('ac')) or bool(AC_RE.search(dh_ac))
         c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5)
         c['ac'] = has_ac
-        w, t, s = zone_stats(c['lat'], c['lon'])
-        c.update({'eff': eff, 'walk': w, 'tp': t, 'sta': s, 'oris': ' '.join(sorted(oris))})
+        w, t, s, car = zone_stats(c['lat'], c['lon'])
+        c.update({'eff': eff, 'walk': w, 'tp': t, 'sta': s, 'car': car, 'oris': ' '.join(sorted(oris))})
         ok.append(c)
 print('rejected:', rej)
 print('OK:', len(ok))

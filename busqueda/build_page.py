@@ -17,7 +17,7 @@ for r in fc:
     items.append({'src': 'Fotocasa', 'price': r['price'], 'eff': r['eff'], 'rate': r['rate'],
                   'agency': r.get('agency'), 'm2': r['surface'], 'eurm2': r['eurm2'],
                   'floor': r['floor'], 'elev': r['elev'], 'heat': r['heat'],
-                  'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'],
+                  'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'),
                   'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'ac': r.get('ac'), 'score': r.get('score'),
                   'sta': names.get(r.get('sta'), r.get('sta')), 'url': r['url'], 'rooms': r.get('rooms')})
@@ -31,7 +31,7 @@ for r in pi:
                   'agency': ag or None, 'm2': r['surface'], 'eurm2': round(r['price'] * 0.85 * (1 + rate) / r['surface']),
                   'floor': r['planta'] if r['planta'] is not None else r.get('floor'),
                   'elev': r['elev'], 'heat': r['heat'], 'hood': r['hood'] or '',
-                  'walk': r['walk'], 'tp': r['tp'], 'sta': names.get(r.get('sta'), r.get('sta')),
+                  'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'), 'sta': names.get(r.get('sta'), r.get('sta')),
                   'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'ac': r.get('ac'), 'score': r.get('score'),
                   'url': r['url'], 'rooms': None})

@@ -9,6 +9,7 @@ SURF_MIN = 70
 D = os.path.dirname(os.path.abspath(__file__))
 Z = json.load(open(os.path.join(D,'zona_final.json')))
 CAR = json.load(open(os.path.join(D,'coche25.json')))
+CART = json.load(open(os.path.join(D,'car_times.json')))
 lats, lons, zone = Z['lats'], Z['lons'], Z['zone']
 nR, nC = len(lats), len(lons)
 dlat = lats[1]-lats[0]; dlon = lons[1]-lons[0]
@@ -59,7 +60,7 @@ def zone_stats(lat, lon):
                 if best is None or dd < best[0]: best = (dd, rr, cc)
     if not best: return None
     _, rr, cc = best
-    return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc]
+    return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc], CART.get(f'{rr},{cc}')
 
 FLOOR_MAP = {1: -1, 2: -1, 3: 0, 4: 0.5, 5: 0.5, 6: 1, 7: 2, 8: 3, 9: 4, 10: 5,
              11: 6, 12: 7, 13: 8, 14: 9, 15: 10, 21: 11}
@@ -76,8 +77,8 @@ ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oe
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
 HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\bcaldera\b', re.I)
-HEAT_NEG = re.compile(r'\b(?:sin|no)\s+[^.,;\n]{0,30}(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bpreinstalaci[oó]n[^.,;\n]{0,40}', re.I)
-AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+[^.,;\n]{0,15}(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
+HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con|hay)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bpreinstalaci[oó]n\s+(?:de\s+|para\s+)?(?:calefacci[oó]n|radiadores|suelo\s+radiante)', re.I)
+AC_NEG = re.compile(r'\b(?:sin|no)\s+(?:aire\s+acondicionado|climatizaci[oó]n)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con)\s+(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(r):
     o = set()
@@ -134,10 +135,10 @@ for r in L:
     if fl is not None and fl >= 3 and not has_elev:
         rejects['asc'] += 1; continue
     score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5)
-    zs = zone_stats(r['lat'], r['lon']) or (None, None, None)
+    zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None)
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
                'ac': has_ac, 'score': score,
-               'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2]})
+               'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2], 'car': zs[3]})
 
 ok.sort(key=lambda x: x['eurm2'])
 print('rejects:', rejects)
