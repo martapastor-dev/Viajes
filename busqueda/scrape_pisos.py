@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 BASE = 'https://www.pisos.com'
 LIST = BASE + '/venta/pisos-madrid_capital_zona_urbana/{}/'
-PRICE_MAX = 322000   # crudo; el efectivo se filtra despues con comision
+PRICE_MAX = 335000   # crudo: 280.000/0.85 ≈ 329.412 (particular con calefacción)
 SURF_MIN = 70
 MAXPAGES = 320
 

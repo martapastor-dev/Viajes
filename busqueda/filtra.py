@@ -75,6 +75,8 @@ ORI_MAP = {1: 'norte', 2: 'noroeste', 3: 'noreste', 4: 'sur', 5: 'sureste',
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
+HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\bcaldera\b', re.I)
+HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:tiene\s+|cuenta\s+con\s+)?calefacci[oó]n|\bpreinstalaci[oó]n[^.\n]{0,30}calefacci[oó]n', re.I)
 AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(r):
@@ -112,7 +114,7 @@ for r in L:
     if r.get('clientType') != 'professional' and not ag: rate = 0.0
     elif 'redpiso' in ag: rate = 0.0484
     else: rate = 0.0363
-    has_heat = r['heating'] == 1
+    has_heat = r['heating'] == 1 or bool(HEAT_RE.search(HEAT_NEG.sub(' ', r['desc'] or '')))
     eff = price * NEGO * (1 + rate) + (0 if has_heat else 10000)  # Pv: compra negociada + comisión (+10k sin calefacción)
     surf = r['surface']
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue

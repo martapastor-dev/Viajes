@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 BASE = 'https://www.fotocasa.es'
-PRICE_MAX = 322000               # crudo: 305.882/(1-4.84%) redpiso ≈ 321.438
+PRICE_MAX = 335000               # crudo: 280.000/0.85 ≈ 329.412 (particular con calefacción)
 EFF_PRICE_MAX = 260000/0.85      # 305.882 sobre precio efectivo
 PENALTY_HEATING = 10000
 EURM2_MAX = 3800

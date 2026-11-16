@@ -14,7 +14,9 @@ NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|si
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_TXT = re.compile(r'icon-aire|\baire\s+acondicionado\b', re.I)
 AC_NEG = re.compile(r'\b(?:sin|no)\s+aire\s+acondicionado', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + 'sub1').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
+HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\bcaldera\b', re.I)
+HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:tiene\s+|cuenta\s+con\s+)?calefacci[oó]n|\bpreinstalaci[oó]n[^.\n]{0,30}calefacci[oó]n', re.I)
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + 'sub1').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -60,6 +62,8 @@ def fetch(c):
         desc_ori = ' '.join(re.findall(r'(?i)\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b',
                                        ' '.join(ORI_CTX.findall(desc))))
         if desc_ori and not c['ori']: c['ori'] = desc_ori.lower()
+        if not cal:
+            cal = bool(HEAT_RE.search(HEAT_NEG.sub(' ', desc)))
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
                   'desc_head': desc[:400], 'ts': now, 'rv': RULE_V})
     except Exception as e:
