@@ -73,7 +73,8 @@ ORI_MAP = {1: 'norte', 2: 'noroeste', 3: 'noreste', 4: 'sur', 5: 'sureste',
            6: 'suroeste', 7: 'este', 8: 'oeste'}
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
-AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|(?<!sin )(?<!no )climatizaci[oó]n', re.I)
+AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
+AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(r):
     o = set()
@@ -110,16 +111,16 @@ for r in L:
     if r.get('clientType') != 'professional' and not ag: rate = 0.0
     elif 'redpiso' in ag: rate = 0.0484
     else: rate = 0.0363
-    eff = price * (1 + rate)          # coste real: anuncio + comisión que paga Marta
+    has_heat = r['heating'] == 1
+    eff = price * (1 + rate) + (0 if has_heat else 10000)  # coste real: anuncio + comisión (+10k si no hay calefacción)
     surf = r['surface']
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
-    eurm2 = eff/surf
-    has_heat = r['heating'] == 1
-    has_ac = r.get('ac') == 1 or bool(AC_RE.search(r['desc'] or ''))
+    eurm2 = price * (1 + rate) / surf  # €/m² sin el coste de calefacción
+    d_ac = r['desc'] or ''
+    has_ac = r.get('ac') == 1 or (bool(AC_RE.search(d_ac)) and not AC_NEG.search(d_ac))
     oris = orientations(r)
     if oris & {'norte', 'noroeste'}: rejects['orient'] = rejects.get('orient', 0) + 1; continue
-    pmax = PRICE_MAX - (0 if has_heat else 10000)
-    if eff > pmax: rejects['precio'] += 1; continue
+    if eff > PRICE_MAX: rejects['precio'] += 1; continue
     if eurm2 > EURM2_MAX: rejects['m2'] += 1; continue
     if r['subtype'] in BAD_SUB: rejects['bajo'] += 1; continue
     fl = floor_of(r)
