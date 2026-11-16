@@ -2,7 +2,8 @@
 """Filtra pisos_details.json -> pisos_ok.json aplicando comision y reglas Marta."""
 import json, re, os
 
-PM = 260000 / 0.85          # 305.882 efectivo
+PM = 280000               # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
+NEGO = 0.85               # precio de compra = valor de mercado del anuncio × 0.85
 E2 = 3800
 D = os.path.dirname(os.path.abspath(__file__))
 Z = json.load(open(os.path.join(D,'zona_final.json')))
@@ -46,9 +47,9 @@ for c in d:
     else:
         ag = (c.get('agency') or '').lower()
         rate = 0.0484 if 'redpiso' in ag else (0.0363 if ag else 0.0)
-        eff = c['price'] * (1 + rate) + (0 if c.get('heat') else 10000)  # coste real +10k sin calefacción
+        eff = c['price'] * NEGO * (1 + rate) + (0 if c.get('heat') else 10000)  # Pv +10k sin calefacción
         if eff > PM: r = 'precio-cal'
-        elif c['price'] * (1 + rate) / c['surface'] > E2: r = 'eurm2'  # €/m² sin calefacción
+        elif c['price'] * NEGO * (1 + rate) / c['surface'] > E2: r = 'eurm2'  # €/m² sin calefacción
         else:
             fl = c['planta'] if c['planta'] is not None else c.get('floor')
             if fl is not None and fl >= 3 and not c.get('elev'): r = 'asc'

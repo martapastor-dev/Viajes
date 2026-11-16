@@ -26,9 +26,9 @@ for r in pi:
         continue
     ag = (r.get('agency') or '')
     rate = 0.0484 if 'redpiso' in ag.lower() else (0.0363 if ag else 0.0)
-    eff = round(r.get('eff') or (r['price'] * (1 + rate) + (0 if r['heat'] else 10000)))
+    eff = round(r.get('eff') or (r['price'] * 0.85 * (1 + rate) + (0 if r['heat'] else 10000)))
     items.append({'src': 'Pisos', 'price': r['price'], 'eff': eff, 'rate': rate,
-                  'agency': ag or None, 'm2': r['surface'], 'eurm2': round(r['price'] * (1 + rate) / r['surface']),
+                  'agency': ag or None, 'm2': r['surface'], 'eurm2': round(r['price'] * 0.85 * (1 + rate) / r['surface']),
                   'floor': r['planta'] if r['planta'] is not None else r.get('floor'),
                   'elev': r['elev'], 'heat': r['heat'], 'hood': r['hood'] or '',
                   'walk': r['walk'], 'tp': r['tp'], 'sta': names.get(r.get('sta'), r.get('sta')),
