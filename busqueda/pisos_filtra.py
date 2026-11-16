@@ -26,7 +26,7 @@ def zone_stats(lat, lon):
 d = json.load(open(os.path.join(D,'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
-AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|climatizaci[oó]n', re.I)
+AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|(?<!sin )(?<!no )climatizaci[oó]n', re.I)
 
 def orientations(c):
     o = set(w.lower() for w in ORI_WORD.findall(c.get('ori') or ''))

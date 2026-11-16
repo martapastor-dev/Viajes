@@ -73,7 +73,7 @@ ORI_MAP = {1: 'norte', 2: 'noroeste', 3: 'noreste', 4: 'sur', 5: 'sureste',
            6: 'suroeste', 7: 'este', 8: 'oeste'}
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
-AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|climatizaci[oó]n|\baire\b[^.\n]{0,20}acondicionado', re.I)
+AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|(?<!sin )(?<!no )climatizaci[oó]n', re.I)
 
 def orientations(r):
     o = set()

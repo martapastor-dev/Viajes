@@ -12,7 +12,8 @@ MAX_AGE = 5 * 86400          # refrescar si la ficha tiene >5 días
 
 NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern).encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
+AC_TXT = re.compile(r'icon-aire|(?<!sin )(?<!no )aire acondicionado', re.I)
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern).encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -47,7 +48,7 @@ def fetch(c):
         if cal is None:
             cal = bool(re.search(r'icon-calefacci|>Calefacci.n<', r.text))
         if not c.get('ac'):
-            c['ac'] = bool(re.search(r'icon-aire|Aire acondicionado', r.text))
+            c['ac'] = bool(AC_TXT.search(r.text))
         ag = soup.find('a', href=re.compile(r'/inmobiliaria-[^/]+/?$'))
         c['agency'] = ag.get_text(strip=True) if ag else c.get('agency')
         desc_el = soup.select_one('.description__text') or soup.select_one('.ad-detail__description')
