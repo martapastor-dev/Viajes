@@ -116,8 +116,8 @@ for r in L:
     surf = r['surface']
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
     eurm2 = price * (1 + rate) / surf  # €/m² sin el coste de calefacción
-    d_ac = r['desc'] or ''
-    has_ac = r.get('ac') == 1 or (bool(AC_RE.search(d_ac)) and not AC_NEG.search(d_ac))
+    d_ac = AC_NEG.sub(' ', r['desc'] or '')  # quita menciones negadas, conserva las positivas
+    has_ac = r.get('ac') == 1 or bool(AC_RE.search(d_ac))
     oris = orientations(r)
     if oris & {'norte', 'noroeste'}: rejects['orient'] = rejects.get('orient', 0) + 1; continue
     if eff > PRICE_MAX: rejects['precio'] += 1; continue

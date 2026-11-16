@@ -54,8 +54,8 @@ for c in d:
             if fl is not None and fl >= 3 and not c.get('elev'): r = 'asc'
     if r: rej[r] = rej.get(r, 0) + 1
     else:
-        dh_ac = c.get('desc_head') or ''
-        has_ac = bool(c.get('ac')) or (bool(AC_RE.search(dh_ac)) and not AC_NEG.search(dh_ac))
+        dh_ac = AC_NEG.sub(' ', c.get('desc_head') or '')
+        has_ac = bool(c.get('ac')) or bool(AC_RE.search(dh_ac))
         c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5)
         c['ac'] = has_ac
         w, t, s = zone_stats(c['lat'], c['lon'])

@@ -14,7 +14,7 @@ NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|si
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_TXT = re.compile(r'icon-aire|\baire\s+acondicionado\b', re.I)
 AC_NEG = re.compile(r'\b(?:sin|no)\s+aire\s+acondicionado', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern).encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + 'sub1').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -49,7 +49,7 @@ def fetch(c):
         if cal is None:
             cal = bool(re.search(r'icon-calefacci|>Calefacci.n<', r.text))
         if not c.get('ac'):
-            c['ac'] = bool(AC_TXT.search(r.text)) and not bool(AC_NEG.search(r.text))
+            c['ac'] = bool(AC_TXT.search(AC_NEG.sub(' ', r.text)))
         ag = soup.find('a', href=re.compile(r'/inmobiliaria-[^/]+/?$'))
         c['agency'] = ag.get_text(strip=True) if ag else c.get('agency')
         desc_el = soup.select_one('.description__text') or soup.select_one('.ad-detail__description')
