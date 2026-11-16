@@ -57,6 +57,7 @@ a{color:var(--accent)}
 <option value="eurm2">€/m² (menor primero)</option>
 <option value="eff">Precio efectivo (menor primero)</option>
 <option value="m2">m² (mayor primero)</option>
+<option value="score">Puntuación (mayor primero)</option>
 <option value="walk">Minutos andando a metro</option>
 </select>
 <select id="src"><option value="">Fotocasa + Pisos</option><option value="Fotocasa">Solo Fotocasa</option><option value="Pisos">Solo Pisos</option></select>
@@ -66,7 +67,7 @@ a{color:var(--accent)}
 </header>
 <main id="list"></main>
 <div id="map" style="display:none"></div>
-<footer>Búsqueda generada por <a href="https://app.devin.ai/sessions/73e74a1cdda64071ad572a37eec816f2">Devin</a> · filtros: ≤305.882€ efectivos, ≥70 m², ≤3.800 €/m², sin bajos/semisótanos, sin ocupadas/nuda propiedad/alquiladas, ascensor ≥3ª planta, −10.000€ sin calefacción, ≤25' coche a Boadilla (hora punta), ≤40' TP a Alonso Martínez, ≤12' andando a metro/cercanías.</footer>
+<footer>Búsqueda generada por <a href="https://app.devin.ai/sessions/73e74a1cdda64071ad572a37eec816f2">Devin</a> · filtros: ≤305.882€ efectivos, ≥70 m², ≤3.800 €/m², sin bajos/semisótanos, sin ocupadas/nuda propiedad/alquiladas, ascensor ≥3ª planta, −10.000€ sin calefacción, sin norte/noroeste, puntos: 100 −10 oeste −2 sin calefacción −5 sin aire, ≤25' coche a Boadilla (hora punta), ≤40' TP a Alonso Martínez, ≤12' andando a metro/cercanías.</footer>
 <script>
 const D = DATA;
 const ZONA = ZONE;
@@ -137,7 +138,8 @@ function render(){
   const src = document.getElementById('src').value;
   const staSel = document.getElementById('sta').value;
   let items = D.filter(x => visible(x) && (!src || x.src===src) && (!staSel || x.sta===staSel) && (!q || x.hood.toLowerCase().includes(q)));
-  items.sort((a,b)=>((favs.has(b.url)?1:0)-(favs.has(a.url)?1:0))||((a[s]??9999)-(b[s]??9999)));
+  const DESC={score:1,m2:1};
+  items.sort((a,b)=>((favs.has(b.url)?1:0)-(favs.has(a.url)?1:0))||(((a[s]??-1e9)-(b[s]??-1e9))*(DESC[s]?-1:1)));
   document.getElementById('favs').textContent='★ favoritas '+favs.size;
   document.getElementById('showdel').textContent='ocultos '+dels.size;
   sub.textContent = items.length + ' viviendas · ' + new Set(items.map(x=>x.hood)).size + ' barrios';
@@ -147,8 +149,8 @@ function render(){
     const isFav=favs.has(x.url), isDel=dels.has(x.url);
     html+=`<a class="card${isFav?' fav':''}${isDel?' del':''}" href="${esc(x.url)}" target="_blank" rel="noopener">
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
-      <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${esc(x.src)}</span>${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
+      <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'} · ${x.ac?'aire acond.':'<span class="no">sin aire</span>'}</div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
     </a>`;
   }
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';

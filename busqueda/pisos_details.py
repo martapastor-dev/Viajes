@@ -38,6 +38,7 @@ def fetch(c):
                 elif re.search(r'(?i)entreplanta|entresuelo', pv): planta = 1
             if 'Ascensor' in label: asc = True
             if 'Calefacci' in label: cal = True
+            if 'Aire' in label: c['ac'] = True
             if 'Orientaci' in label and val:
                 c['ori'] = val.get_text(strip=True)
         if asc is None:
@@ -45,6 +46,8 @@ def fetch(c):
                   or 'icon-ascensor' in r.text
         if cal is None:
             cal = bool(re.search(r'icon-calefacci|>Calefacci.n<', r.text))
+        if not c.get('ac'):
+            c['ac'] = bool(re.search(r'icon-aire|Aire acondicionado', r.text))
         ag = soup.find('a', href=re.compile(r'/inmobiliaria-[^/]+/?$'))
         c['agency'] = ag.get_text(strip=True) if ag else c.get('agency')
         desc_el = soup.select_one('.description__text') or soup.select_one('.ad-detail__description')
@@ -65,8 +68,8 @@ todo = []
 for c in cands:
     p = prev.get(c['id'])
     if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price']:
-        if 'ori' in p:
-            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori') if k in p})
+        if 'ori' in p and 'ac' in p:
+            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori', 'ac') if k in p})
         else:
             todo.append(c)  # la ficha en caché es anterior al campo 'ori'
     else:

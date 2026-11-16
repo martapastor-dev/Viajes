@@ -152,6 +152,7 @@ for items in pages_items:
             'rented': it.get('isRentedWithTenants'), 'auction': it.get('isAuctioned'),
             'surface': feat(it, 'surface'), 'rooms': feat(it, 'rooms'),
             'heating': feat(it, 'heating'), 'elevator': feat(it, 'elevator'),
+            'ac': feat(it, 'air_conditioner'),
             'floorfeat': feat(it, 'floor'), 'ori': feat(it, 'orientation'),
             'hood': (it.get('address') or {}).get('neighborhood'),
             'dist': (it.get('address') or {}).get('municipality'),

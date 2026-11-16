@@ -26,6 +26,7 @@ def zone_stats(lat, lon):
 d = json.load(open(os.path.join(D,'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
+AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|climatizaci[oó]n', re.I)
 
 def orientations(c):
     o = set(w.lower() for w in ORI_WORD.findall(c.get('ori') or ''))
@@ -45,7 +46,7 @@ for c in d:
         ag = (c.get('agency') or '').lower()
         rate = 0.0484 if 'redpiso' in ag else (0.0363 if ag else 0.0)
         eff = c['price'] * (1 + rate)   # coste real: anuncio + comisión
-        lim = PM - (0 if c.get('heat') else 10000) - (10000 if 'oeste' in oris else 0)
+        lim = PM - (0 if c.get('heat') else 10000)
         if eff > lim: r = 'precio-cal'
         elif eff / c['surface'] > E2: r = 'eurm2'
         else:
@@ -53,6 +54,9 @@ for c in d:
             if fl is not None and fl >= 3 and not c.get('elev'): r = 'asc'
     if r: rej[r] = rej.get(r, 0) + 1
     else:
+        has_ac = bool(c.get('ac')) or bool(AC_RE.search(c.get('desc_head') or ''))
+        c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5)
+        c['ac'] = has_ac
         w, t, s = zone_stats(c['lat'], c['lon'])
         c.update({'walk': w, 'tp': t, 'sta': s, 'oris': ' '.join(sorted(oris))})
         ok.append(c)

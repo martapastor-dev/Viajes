@@ -73,6 +73,7 @@ ORI_MAP = {1: 'norte', 2: 'noroeste', 3: 'noreste', 4: 'sur', 5: 'sureste',
            6: 'suroeste', 7: 'este', 8: 'oeste'}
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
+AC_RE = re.compile(r'(?<!sin )(?<!no )aire acondicionado|climatizaci[oó]n|\baire\b[^.\n]{0,20}acondicionado', re.I)
 
 def orientations(r):
     o = set()
@@ -114,9 +115,10 @@ for r in L:
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
     eurm2 = eff/surf
     has_heat = r['heating'] == 1
+    has_ac = r.get('ac') == 1 or bool(AC_RE.search(r['desc'] or ''))
     oris = orientations(r)
     if oris & {'norte', 'noroeste'}: rejects['orient'] = rejects.get('orient', 0) + 1; continue
-    pmax = PRICE_MAX - (0 if has_heat else 10000) - (10000 if 'oeste' in oris else 0)
+    pmax = PRICE_MAX - (0 if has_heat else 10000)
     if eff > pmax: rejects['precio'] += 1; continue
     if eurm2 > EURM2_MAX: rejects['m2'] += 1; continue
     if r['subtype'] in BAD_SUB: rejects['bajo'] += 1; continue
@@ -127,8 +129,10 @@ for r in L:
     has_elev = r['elevator'] == 1
     if fl is not None and fl >= 3 and not has_elev:
         rejects['asc'] += 1; continue
+    score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5)
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None)
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
+               'ac': has_ac, 'score': score,
                'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2]})
 
 ok.sort(key=lambda x: x['eurm2'])
