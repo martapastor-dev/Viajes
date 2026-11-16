@@ -44,6 +44,7 @@ for c in d:
     if c.get('detail_err'): r = 'err'
     elif c.get('occ'): r = 'ocupada'
     elif c['planta'] is not None and c['planta'] == 0: r = 'bajo'
+    elif c.get('interior'): r = 'interior'
     elif oris & {'norte', 'noroeste'}: r = 'orient'
     else:
         ag = (c.get('agency') or '').lower()

@@ -16,7 +16,8 @@ AC_TXT = re.compile(r'icon-aire|\baire\s+acondicionado\b', re.I)
 AC_NEG = re.compile(r'\b(?:sin|no)\s+aire\s+acondicionado|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con)\s+aire\s+acondicionado|\bpreinstalaci[oó]n[^.,;\n]{0,40}aire\s+acondicionado', re.I)
 HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\bcaldera\b', re.I)
 HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con|hay)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bpreinstalaci[oó]n\s+(?:de\s+|para\s+)?(?:calefacci[oó]n|radiadores|suelo\s+radiante)', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + 'sub1').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
+INTERIOR = re.compile(r'\b(?:vivienda|piso|casa|estudio|[aá]tico|d[uú]plex|inmueble|apartamento)\s+interior\b|\binterior\b\s+(?:muy\s+)?(?:luminoso|soleado|tranquilo|pero)|orientaci[oó]n\s+interior\b|\b\d+[ªº]?\s*interior\b|\binterior\s+con\s+ascensor\b|\bes\s+interior\b', re.I)
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + INTERIOR.pattern + 'sub1').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D,'pisos_cands.json')))
@@ -64,6 +65,7 @@ def fetch(c):
         if desc_ori and not c['ori']: c['ori'] = desc_ori.lower()
         if not cal:
             cal = bool(HEAT_RE.search(HEAT_NEG.sub(' ', desc)))
+        c['interior'] = bool(INTERIOR.search(desc))
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
                   'desc_head': desc[:400], 'ts': now, 'rv': RULE_V})
     except Exception as e:
@@ -75,7 +77,7 @@ for c in cands:
     p = prev.get(c['id'])
     if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price']:
         if 'ori' in p and 'ac' in p:
-            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori', 'ac') if k in p})
+            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori', 'ac', 'interior') if k in p})
         else:
             todo.append(c)  # la ficha en caché es anterior al campo 'ori'
     else:
