@@ -76,8 +76,8 @@ ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oe
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
 HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\bcaldera\b', re.I)
-HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:tiene\s+|cuenta\s+con\s+)?calefacci[oó]n|\bpreinstalaci[oó]n[^.\n]{0,30}calefacci[oó]n', re.I)
-AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
+HEAT_NEG = re.compile(r'\b(?:sin|no)\s+[^.,;\n]{0,30}(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bpreinstalaci[oó]n[^.,;\n]{0,40}', re.I)
+AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+[^.,;\n]{0,15}(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(r):
     o = set()

@@ -28,7 +28,7 @@ d = json.load(open(os.path.join(D,'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
-AC_NEG = re.compile(r'\b(?:sin|no)\s+(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
+AC_NEG = re.compile(r'\b(?:sin|no|sin\s+instalar)\s+[^.,;\n]{0,15}(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(c):
     o = set(w.lower() for w in ORI_WORD.findall(c.get('ori') or ''))
