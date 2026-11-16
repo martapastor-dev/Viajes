@@ -45,6 +45,7 @@ for c in d:
     elif c.get('occ'): r = 'ocupada'
     elif c['planta'] is not None and c['planta'] == 0: r = 'bajo'
     elif c.get('interior'): r = 'interior'
+    elif (c.get('pics') or 0) < 2: r = 'fotos'
     elif oris & {'norte', 'noroeste'}: r = 'orient'
     else:
         ag = (c.get('agency') or '').lower()
