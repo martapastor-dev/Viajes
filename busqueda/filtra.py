@@ -141,7 +141,7 @@ for r in L:
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None)
     score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5) \
         - (5 if (zs[3] or 0) >= 25 else (2 if (zs[3] or 0) > 20 else 0)) - (5 if (zs[1] or 0) > 35 else 0) \
-        - (5 if surf < 75 else (3 if surf < 80 else 0))
+        - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5)
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
                'ac': has_ac, 'score': score,
                'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2], 'car': zs[3]})

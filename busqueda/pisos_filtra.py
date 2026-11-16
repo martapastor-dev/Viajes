@@ -64,7 +64,7 @@ for c in d:
         w, t, s, car = zone_stats(c['lat'], c['lon'])
         c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5) \
             - (5 if (car or 0) >= 25 else (2 if (car or 0) > 20 else 0)) - (5 if (t or 0) > 35 else 0) \
-            - (5 if (c['surface'] or 0) < 75 else (3 if (c['surface'] or 0) < 80 else 0))
+            - (5 if (c['surface'] or 0) < 75 else (3 if (c['surface'] or 0) < 80 else 0)) - (0 if c.get('elev') else 5)
         c.update({'eff': eff, 'walk': w, 'tp': t, 'sta': s, 'car': car, 'oris': ' '.join(sorted(oris))})
         ok.append(c)
 print('rejected:', rej)
