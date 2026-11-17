@@ -3,7 +3,7 @@
 import json, re, os
 
 PM = 280000               # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
-NEGO = 0.85               # precio de compra = valor de mercado del anuncio × 0.85
+NEGO = 0.9               # precio de compra = valor de mercado del anuncio × 0.85
 E2 = 3800
 D = os.path.dirname(os.path.abspath(__file__))
 Z = json.load(open(os.path.join(D,'zona_final.json')))
@@ -50,7 +50,7 @@ for c in d:
     else:
         ag = (c.get('agency') or '').lower()
         rate = 0.0484 if 'redpiso' in ag else (0.0363 if ag else 0.0)
-        eff = c['price'] * NEGO * (1 + rate) + (0 if c.get('heat') else 10000)  # Pv +10k sin calefacción
+        eff = c['price'] * NEGO * (1 + rate) + (0 if c.get('heat') else 10000) + c['price'] * NEGO * 0.06  # Pv +10k sin calefacción
         if eff > PM: r = 'precio-cal'
         elif c['price'] * NEGO * (1 + rate) / c['surface'] > E2: r = 'eurm2'  # €/m² sin calefacción
         else:

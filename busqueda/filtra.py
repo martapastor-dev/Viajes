@@ -2,7 +2,7 @@
 import json, re, math, os
 
 PRICE_MAX = 280000  # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
-NEGO = 0.85         # precio de compra = valor de mercado del anuncio × 0.85
+NEGO = 0.9         # precio de compra = valor de mercado del anuncio × 0.85
 EURM2_MAX = 3800
 SURF_MIN = 70
 
@@ -118,7 +118,7 @@ for r in L:
     elif 'redpiso' in ag: rate = 0.0484
     else: rate = 0.0363
     has_heat = r['heating'] == 1 or bool(HEAT_RE.search(HEAT_NEG.sub(' ', r['desc'] or '')))
-    eff = price * NEGO * (1 + rate) + (0 if has_heat else 10000)  # Pv: compra negociada + comisión (+10k sin calefacción)
+    eff = price * NEGO * (1 + rate) + (0 if has_heat else 10000) + price * NEGO * 0.06  # Pv: compra negociada + comisión (+10k sin calefacción)
     surf = r['surface']
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
     eurm2 = price * NEGO * (1 + rate) / surf  # €/m² sobre Pv sin calefacción
