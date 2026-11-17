@@ -63,7 +63,7 @@ for c in d:
         has_ac = bool(c.get('ac')) or bool(AC_RE.search(dh_ac))
         c['ac'] = has_ac
         w, t, s, car = zone_stats(c['lat'], c['lon'])
-        bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera', c.get('hood') or '', re.I))
+        bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera|los [aá]ngeles|san andr[eé]s', c.get('hood') or '', re.I))
         c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5) \
             - (5 if (car or 0) >= 25 else (2 if (car or 0) > 20 else 0)) - (5 if (t or 0) > 35 else 0) \
             - (5 if (c['surface'] or 0) < 75 else (3 if (c['surface'] or 0) < 80 else 0)) - (0 if c.get('elev') else 5) - (10 if bad_hood else 0)

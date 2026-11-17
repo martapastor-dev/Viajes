@@ -140,7 +140,7 @@ for r in L:
     if fl is not None and fl >= 3 and not has_elev:
         rejects['asc'] += 1; continue
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None)
-    bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera', r.get('hood') or '', re.I))
+    bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera|los [aá]ngeles|san andr[eé]s', r.get('hood') or '', re.I))
     score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5) \
         - (5 if (zs[3] or 0) >= 25 else (2 if (zs[3] or 0) > 20 else 0)) - (5 if (zs[1] or 0) > 35 else 0) \
         - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5) - (10 if bad_hood else 0)
