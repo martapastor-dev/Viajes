@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-import json, re, math
+import json, re, math, os
+
+HOME = os.path.dirname(os.path.abspath(__file__))
 
 PRICE_MAX = 280000  # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
 NEGO = 0.9         # precio de compra = valor de mercado del anuncio × 0.85
 EURM2_MAX = 3800
 SURF_MIN = 70
 
-Z = json.load(open('/home/ubuntu/zona_final.json'))
-CAR = json.load(open('/home/ubuntu/coche25.json'))
-CART = json.load(open('/home/ubuntu/car_times.json'))
+Z = json.load(open(os.path.join(HOME, 'zona_final.json')))
+CAR = json.load(open(os.path.join(HOME, 'coche25.json')))
+CART = json.load(open(os.path.join(HOME, 'car_times.json')))
 lats, lons, zone = Z['lats'], Z['lons'], Z['zone']
 nR, nC = len(lats), len(lons)
 dlat = lats[1]-lats[0]; dlon = lons[1]-lons[0]
@@ -104,7 +106,7 @@ def floor_of(r):
     if r['subtype'] in BAD_SUB or LOW_RE.search(d): return 0
     return None
 
-L = json.load(open('/home/ubuntu/fc_raw.json'))
+L = json.load(open(os.path.join(HOME, 'fc_raw.json')))
 ok, out = [], []
 rejects = {'zona':0,'precio':0,'m2':0,'sup':0,'bajo':0,'ocup':0,'asc':0,'orient':0,'interior':0,'fotos':0}
 for r in L:
@@ -149,6 +151,6 @@ for r in L:
 ok.sort(key=lambda x: x['eurm2'])
 print('rejects:', rejects)
 print('OK:', len(ok))
-json.dump(ok, open('/home/ubuntu/fc_ok.json', 'w'), ensure_ascii=False, indent=1)
+json.dump(ok, open(os.path.join(HOME, 'fc_ok.json'), 'w'), ensure_ascii=False, indent=1)
 for r in ok:
     print(f"{r['price']:>8,.0f}€ {r['surface']:>3}m² {r['eurm2']:>5}€/m² p{r['floor']} asc={int(r['elev'])} cal={int(r['heat'])} w{r['walk'] and round(r['walk'])} tp{r['tp'] and round(r['tp'])} [{r['hood']}] {r['url']}")

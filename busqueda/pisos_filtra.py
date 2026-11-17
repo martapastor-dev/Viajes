@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Filtra pisos_details.json -> pisos_ok.json aplicando comision y reglas Marta."""
-import json, re
+import json, re, os
+
+HOME = os.path.dirname(os.path.abspath(__file__))
 
 PM = 280000               # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
 NEGO = 0.9               # precio de compra = valor de mercado del anuncio × 0.85
 E2 = 3800
-Z = json.load(open('/home/ubuntu/zona_final.json'))
-CART = json.load(open('/home/ubuntu/car_times.json'))
+Z = json.load(open(os.path.join(HOME, 'zona_final.json')))
+CART = json.load(open(os.path.join(HOME, 'car_times.json')))
 lats, lons, zone = Z['lats'], Z['lons'], Z['zone']
 nR, nC = len(lats), len(lons)
 dlat = lats[1]-lats[0]; dlon = lons[1]-lons[0]
@@ -24,7 +26,7 @@ def zone_stats(lat, lon):
     _, rr, cc = best
     return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc], CART.get(f'{rr},{cc}')
 
-d = json.load(open('/home/ubuntu/pisos_details.json'))
+d = json.load(open(os.path.join(HOME, 'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
@@ -70,4 +72,4 @@ for c in d:
         ok.append(c)
 print('rejected:', rej)
 print('OK:', len(ok))
-json.dump(ok, open('/home/ubuntu/pisos_ok.json', 'w'), ensure_ascii=False)
+json.dump(ok, open(os.path.join(HOME, 'pisos_ok.json'), 'w'), ensure_ascii=False)
