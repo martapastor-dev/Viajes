@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-import json, re, math, os
+import json, re, math
 
 PRICE_MAX = 280000  # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
 NEGO = 0.9         # precio de compra = valor de mercado del anuncio × 0.85
 EURM2_MAX = 3800
 SURF_MIN = 70
 
-D = os.path.dirname(os.path.abspath(__file__))
-Z = json.load(open(os.path.join(D,'zona_final.json')))
-CAR = json.load(open(os.path.join(D,'coche25.json')))
-CART = json.load(open(os.path.join(D,'car_times.json')))
+Z = json.load(open('/home/ubuntu/zona_final.json'))
+CAR = json.load(open('/home/ubuntu/coche25.json'))
+CART = json.load(open('/home/ubuntu/car_times.json'))
 lats, lons, zone = Z['lats'], Z['lons'], Z['zone']
 nR, nC = len(lats), len(lons)
 dlat = lats[1]-lats[0]; dlon = lons[1]-lons[0]
@@ -105,7 +104,7 @@ def floor_of(r):
     if r['subtype'] in BAD_SUB or LOW_RE.search(d): return 0
     return None
 
-L = json.load(open(os.path.join(D,'fc_raw.json')))
+L = json.load(open('/home/ubuntu/fc_raw.json'))
 ok, out = [], []
 rejects = {'zona':0,'precio':0,'m2':0,'sup':0,'bajo':0,'ocup':0,'asc':0,'orient':0,'interior':0,'fotos':0}
 for r in L:
@@ -139,9 +138,10 @@ for r in L:
     if fl is not None and fl >= 3 and not has_elev:
         rejects['asc'] += 1; continue
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None)
+    bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera', r.get('hood') or '', re.I))
     score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5) \
         - (5 if (zs[3] or 0) >= 25 else (2 if (zs[3] or 0) > 20 else 0)) - (5 if (zs[1] or 0) > 35 else 0) \
-        - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5)
+        - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5) - (10 if bad_hood else 0)
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
                'ac': has_ac, 'score': score,
                'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2], 'car': zs[3]})
@@ -149,6 +149,6 @@ for r in L:
 ok.sort(key=lambda x: x['eurm2'])
 print('rejects:', rejects)
 print('OK:', len(ok))
-json.dump(ok, open(os.path.join(D,'fc_ok.json'), 'w'), ensure_ascii=False, indent=1)
+json.dump(ok, open('/home/ubuntu/fc_ok.json', 'w'), ensure_ascii=False, indent=1)
 for r in ok:
     print(f"{r['price']:>8,.0f}€ {r['surface']:>3}m² {r['eurm2']:>5}€/m² p{r['floor']} asc={int(r['elev'])} cal={int(r['heat'])} w{r['walk'] and round(r['walk'])} tp{r['tp'] and round(r['tp'])} [{r['hood']}] {r['url']}")
