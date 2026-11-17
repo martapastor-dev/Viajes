@@ -30,6 +30,7 @@ d = json.load(open(os.path.join(HOME, 'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
+BAD_HOOD = re.compile(r'villaverde|usera|orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|los [aá]ngeles|san andr[eé]s|butarque|los rosales|san crist[oó]bal', re.I)
 AC_NEG = re.compile(r'\b(?:sin|no)\s+(?:aire\s+acondicionado|climatizaci[oó]n)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con)\s+(?:aire\s+acondicionado|climatizaci[oó]n)|\bpreinstalaci[oó]n[^.,;\n]{0,40}(?:aire\s+acondicionado|climatizaci[oó]n)', re.I)
 
 def orientations(c):
@@ -48,6 +49,7 @@ for c in d:
     elif c.get('interior'): r = 'interior'
     elif (c.get('pics') or 0) < 2: r = 'fotos'
     elif oris & {'norte', 'noroeste'}: r = 'orient'
+    elif BAD_HOOD.search(c.get('hood') or ''): r = 'barrio'
     else:
         ag = (c.get('agency') or '').lower()
         rate = 0.0484 if 'redpiso' in ag else (0.0363 if ag else 0.0)
@@ -63,10 +65,9 @@ for c in d:
         has_ac = bool(c.get('ac')) or bool(AC_RE.search(dh_ac))
         c['ac'] = has_ac
         w, t, s, car = zone_stats(c['lat'], c['lon'])
-        bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera|los [aá]ngeles|san andr[eé]s', c.get('hood') or '', re.I))
         c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5) \
             - (5 if (car or 0) >= 25 else (2 if (car or 0) > 20 else 0)) - (5 if (t or 0) > 35 else 0) \
-            - (5 if (c['surface'] or 0) < 75 else (3 if (c['surface'] or 0) < 80 else 0)) - (0 if c.get('elev') else 5) - (10 if bad_hood else 0)
+            - (5 if (c['surface'] or 0) < 75 else (3 if (c['surface'] or 0) < 80 else 0)) - (0 if c.get('elev') else 5)
         c.update({'eff': eff, 'eurm2': round(c['price'] * NEGO * (1 + rate) / c['surface']),
                   'walk': w, 'tp': t, 'sta': s, 'car': car, 'oris': ' '.join(sorted(oris))})
         ok.append(c)

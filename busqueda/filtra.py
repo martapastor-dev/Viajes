@@ -66,6 +66,7 @@ def zone_stats(lat, lon):
 FLOOR_MAP = {1: -1, 2: -1, 3: 0, 4: 0.5, 5: 0.5, 6: 1, 7: 2, 8: 3, 9: 4, 10: 5,
              11: 6, 12: 7, 13: 8, 14: 9, 15: 10, 21: 11}
 BAD_SUB = {'GROUND_FLOOR', 'SEMI_BASEMENT', 'BASEMENT'}
+BAD_HOOD = re.compile(r'villaverde|usera|orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|los [aá]ngeles|san andr[eé]s|butarque|los rosales|san crist[oó]bal', re.I)
 LOW_RE = re.compile(r'planta\s+baja|\bbajo\b|semis[oó]tano|s[oó]tano', re.I)
 NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesión|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|\b\d+\s*[,%]?\s*(de la )?propiedad|subasta|para inversores|inversi[oó]n\b|rentabilidad', re.I)
 FLOOR_TXT = re.compile(r'(primer|segund|tercer|cuart|quint|sext|s[eé]ptim|octav|noven|d[eé]cim)[ao]?\s+planta|planta\s+(\d+)|(\d+)[ªº]\s*planta', re.I)
@@ -108,7 +109,7 @@ def floor_of(r):
 
 L = json.load(open(os.path.join(HOME, 'fc_raw.json')))
 ok, out = [], []
-rejects = {'zona':0,'precio':0,'m2':0,'sup':0,'bajo':0,'ocup':0,'asc':0,'orient':0,'interior':0,'fotos':0}
+rejects = {'zona':0,'precio':0,'m2':0,'sup':0,'bajo':0,'ocup':0,'asc':0,'orient':0,'interior':0,'fotos':0,'barrio':0}
 for r in L:
     why = []
     if not in_zone(r['lat'], r['lon']):
@@ -139,11 +140,12 @@ for r in L:
     has_elev = r['elevator'] == 1
     if fl is not None and fl >= 3 and not has_elev:
         rejects['asc'] += 1; continue
+    if BAD_HOOD.search(r.get('hood') or ''):
+        rejects['barrio'] += 1; continue
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None)
-    bad_hood = bool(re.search(r'orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|usera|los [aá]ngeles|san andr[eé]s', r.get('hood') or '', re.I))
     score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5) \
         - (5 if (zs[3] or 0) >= 25 else (2 if (zs[3] or 0) > 20 else 0)) - (5 if (zs[1] or 0) > 35 else 0) \
-        - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5) - (10 if bad_hood else 0)
+        - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5)
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
                'ac': has_ac, 'score': score,
                'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2], 'car': zs[3]})
