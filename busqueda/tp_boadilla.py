@@ -106,7 +106,7 @@ for r in range(nR):
             if w > WALK_MAX: continue
             t = TB.get(k)
             if t is None: continue
-            if best is None or t < best: best = t
+            if best is None or w + t < best: best = w + t
         tpb[r][c] = best
 
 Z['tpb'] = tpb

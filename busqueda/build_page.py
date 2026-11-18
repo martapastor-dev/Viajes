@@ -2,8 +2,14 @@
 """Merge fc_ok + pisos_ok -> items.json -> casas/index.html"""
 import json, re, html, os
 
-HOME = '/home/ubuntu'
-OUT = os.path.join(HOME, 'casas')
+HOME = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(HOME, 'casas') if os.path.isdir(os.path.join(HOME, 'casas')) else HOME
+
+def _p(name):
+    for base in (OUT, HOME):
+        p = os.path.join(base, name)
+        if os.path.exists(p): return p
+    return os.path.join(HOME, name)
 names = json.load(open(os.path.join(HOME, 'stop_names.json')))
 
 fc = json.load(open(os.path.join(HOME, 'fc_ok.json')))
@@ -39,8 +45,8 @@ for r in pi:
 items.sort(key=lambda x: x['eurm2'])
 json.dump(items, open(os.path.join(OUT, 'items.json'), 'w'), ensure_ascii=False)
 
-tpl = open(os.path.join(OUT, 'index_template.html')).read()
-zone = open(os.path.join(OUT, 'zona_overlay.json')).read().replace('</', '<\\/')
+tpl = open(_p('index_template.html')).read()
+zone = open(_p('zona_overlay.json')).read().replace('</', '<\\/')
 data_js = json.dumps(items, ensure_ascii=False).replace('</', '<\\/')
 page = tpl.replace('const D = DATA;', 'const D = ' + data_js + ';')
 page = page.replace('const ZONA = ZONE;', 'const ZONA = ' + zone + ';')
