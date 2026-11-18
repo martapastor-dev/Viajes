@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
-CACHE = '/home/ubuntu/pisos_details.json'
+D = os.path.dirname(os.path.abspath(__file__))
+CACHE = os.path.join(D, 'pisos_details.json')
 MAX_AGE = 5 * 86400          # refrescar si la ficha tiene >5 días
 
 NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesi[oó]n|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|subasta|rentabilidad|para inversores', re.I)
@@ -20,7 +21,7 @@ INT_NEG = re.compile(r'(?:patio|escalera|portal|carpintería|carpinteria|armario
 RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + INTERIOR.pattern + INT_NEG.pattern + 'sub2').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
-cands = json.load(open('/home/ubuntu/pisos_cands.json'))
+cands = json.load(open(os.path.join(D, 'pisos_cands.json')))
 prev = {c['id']: c for c in json.load(open(CACHE))} if os.path.exists(CACHE) else {}
 now = time.time()
 
