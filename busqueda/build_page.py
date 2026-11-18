@@ -2,8 +2,8 @@
 """Merge fc_ok + pisos_ok -> items.json -> casas/index.html"""
 import json, re, html, os
 
-HOME = os.path.dirname(os.path.abspath(__file__))
-OUT = HOME
+HOME = '/home/ubuntu'
+OUT = os.path.join(HOME, 'casas')
 names = json.load(open(os.path.join(HOME, 'stop_names.json')))
 
 fc = json.load(open(os.path.join(HOME, 'fc_ok.json')))
@@ -17,7 +17,7 @@ for r in fc:
     items.append({'src': 'Fotocasa', 'price': r['price'], 'eff': r['eff'], 'rate': r['rate'],
                   'agency': r.get('agency'), 'm2': r['surface'], 'eurm2': r['eurm2'],
                   'floor': r['floor'], 'elev': r['elev'], 'heat': r['heat'],
-                  'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'),
+                  'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'), 'tpb': r.get('tpb'),
                   'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'ac': r.get('ac'), 'score': r.get('score'),
                   'sta': names.get(r.get('sta'), r.get('sta')), 'url': r['url'], 'rooms': r.get('rooms')})
@@ -31,7 +31,7 @@ for r in pi:
                   'agency': ag or None, 'm2': r['surface'], 'eurm2': r.get('eurm2') or round(r['price'] * 0.9 * (1 + rate) / r['surface']),
                   'floor': r['planta'] if r['planta'] is not None else r.get('floor'),
                   'elev': r['elev'], 'heat': r['heat'], 'hood': r['hood'] or '',
-                  'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'), 'sta': names.get(r.get('sta'), r.get('sta')),
+                  'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'), 'tpb': r.get('tpb'), 'sta': names.get(r.get('sta'), r.get('sta')),
                   'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'ac': r.get('ac'), 'score': r.get('score'),
                   'url': r['url'], 'rooms': None})

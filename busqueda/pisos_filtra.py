@@ -22,9 +22,9 @@ def zone_stats(lat, lon):
             if 0 <= rr < nR and 0 <= cc < nC and zone[rr][cc]:
                 dd = dr*dr+dc*dc
                 if best is None or dd < best[0]: best = (dd, rr, cc)
-    if not best: return (None, None, None, None)
+    if not best: return (None, None, None, None, None)
     _, rr, cc = best
-    return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc], CART.get(f'{rr},{cc}')
+    return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc], CART.get(f'{rr},{cc}'), Z.get('tpb', [[None]*nC for _ in range(nR)])[rr][cc]
 
 d = json.load(open(os.path.join(HOME, 'pisos_details.json')))
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
@@ -64,12 +64,12 @@ for c in d:
         dh_ac = AC_NEG.sub(' ', c.get('desc_head') or '')
         has_ac = bool(c.get('ac')) or bool(AC_RE.search(dh_ac))
         c['ac'] = has_ac
-        w, t, s, car = zone_stats(c['lat'], c['lon'])
+        w, t, s, car, tb = zone_stats(c['lat'], c['lon'])
         c['score'] = 100 - (10 if 'oeste' in oris else 0) - (0 if c.get('heat') else 2) - (0 if has_ac else 5) \
             - (5 if (car or 0) >= 25 else (2 if (car or 0) > 20 else 0)) - (5 if (t or 0) > 35 else 0) \
             - (5 if (c['surface'] or 0) < 75 else (3 if (c['surface'] or 0) < 80 else 0)) - (0 if c.get('elev') else 5)
         c.update({'eff': eff, 'eurm2': round(c['price'] * NEGO * (1 + rate) / c['surface']),
-                  'walk': w, 'tp': t, 'sta': s, 'car': car, 'oris': ' '.join(sorted(oris))})
+                  'walk': w, 'tp': t, 'sta': s, 'car': car, 'tpb': tb, 'oris': ' '.join(sorted(oris))})
         ok.append(c)
 print('rejected:', rej)
 print('OK:', len(ok))

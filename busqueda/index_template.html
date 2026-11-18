@@ -59,6 +59,8 @@ a{color:var(--accent)}
 <option value="m2">m² (mayor primero)</option>
 <option value="score">Puntuación (mayor primero)</option>
 <option value="walk">Minutos andando a metro</option>
+<option value="car">Minutos en coche a Boadilla</option>
+<option value="tp">Minutos en TP a Alonso Martínez</option>
 </select>
 <select id="src"><option value="">Fotocasa + Pisos</option><option value="Fotocasa">Solo Fotocasa</option><option value="Pisos">Solo Pisos</option></select>
 <button class="tgl" id="favs">★ favoritas</button><button class="tgl" id="showdel">ver ocultos</button>
@@ -123,7 +125,7 @@ function renderMarkers(){
     if(x.lat==null) continue;
     const c=favs.has(x.url)?'#e3a008':(x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37'));
     const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
-    m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM · 🚗 ${x.car?x.car:'?'}' Boadilla<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>`);
+    m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM · 🚗 ${x.car?x.car:'?'}' Boadilla · 🚇 ${x.tpb?Math.round(x.tpb):'?'}' Cd. Financiera<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>`);
     m.addTo(layer);
   }
 }
@@ -139,7 +141,7 @@ function render(){
   const staSel = document.getElementById('sta').value;
   let items = D.filter(x => visible(x) && (!src || x.src===src) && (!staSel || x.sta===staSel) && (!q || x.hood.toLowerCase().includes(q)));
   const DESC={score:1,m2:1};
-  items.sort((a,b)=>((favs.has(b.url)?1:0)-(favs.has(a.url)?1:0))||(((a[s]??-1e9)-(b[s]??-1e9))*(DESC[s]?-1:1)));
+  items.sort((a,b)=>((favs.has(b.url)?1:0)-(favs.has(a.url)?1:0))||(((a[s]??(DESC[s]?-1e9:1e9))-(b[s]??(DESC[s]?-1e9:1e9)))*(DESC[s]?-1:1)));
   document.getElementById('favs').textContent='★ favoritas '+favs.size;
   document.getElementById('showdel').textContent='ocultos '+dels.size;
   sub.textContent = items.length + ' viviendas · ' + new Set(items.map(x=>x.hood)).size + ' barrios';
@@ -150,7 +152,7 @@ function render(){
     html+=`<a class="card${isFav?' fav':''}${isDel?' del':''}" href="${esc(x.url)}" target="_blank" rel="noopener">
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'} · ${x.ac?'aire acond.':'<span class="no">sin aire</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
     </a>`;
   }
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';
