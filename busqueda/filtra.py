@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
-import json, re, math, os
+import json, re, math, os, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HOME)
+from params import load as _pload, bad_hood_fn, rej_orient
 
-PRICE_MAX = 280000  # Pv = anuncio*0.85*(1+comisión) (+10k sin calefacción) ≤ 280.000€
-NEGO = 0.9         # precio de compra = valor de mercado del anuncio × 0.85
-EURM2_MAX = 3800
-SURF_MIN = 70
+P = _pload()
+PRICE_MAX = P['precio_max']
+NEGO = P['nego']
+ITP = P['itp']
+COM_RED = P['com_redpiso']
+COM_AG = P['com_agencia']
+EXTRA_CAL = P['extra_sin_cal']
+EURM2_MAX = P['eurm2_max']
+SURF_MIN = P['m2_min']
+BAD_HOOD_FN = bad_hood_fn(P)
+REJ_ORI = rej_orient(P)
 
 Z = json.load(open(os.path.join(HOME, 'zona_final.json')))
 CAR = json.load(open(os.path.join(HOME, 'coche25.json')))
@@ -66,7 +75,6 @@ def zone_stats(lat, lon):
 FLOOR_MAP = {1: -1, 2: -1, 3: 0, 4: 0.5, 5: 0.5, 6: 1, 7: 2, 8: 3, 9: 4, 10: 5,
              11: 6, 12: 7, 13: 8, 14: 9, 15: 10, 21: 11}
 BAD_SUB = {'GROUND_FLOOR', 'SEMI_BASEMENT', 'BASEMENT'}
-BAD_HOOD = re.compile(r'villaverde|usera|orcasitas|orcasur|san ferm[ií]n|almendrales|moscard[oó]|zof[ií]o|pradolongo|los [aá]ngeles|san andr[eé]s|butarque|los rosales|san crist[oó]bal', re.I)
 LOW_RE = re.compile(r'planta\s+baja|\bbajo\b|semis[oó]tano|s[oó]tano', re.I)
 NO_POSES = re.compile(r'okupad|(?<!des)(?<!no )ocupad|nuda propiedad|usufruct|sin posesión|no se puede visitar|(?<!sin )(?<!libre de )inquilinos?|no se (entrega|vende)[^.,;\n]{0,40}inquilinos?|alquilad[ao]\b|vivienda alquilada|\b\d+\s*[,%]?\s*(de la )?propiedad|subasta|para inversores|inversi[oó]n\b|rentabilidad', re.I)
 FLOOR_TXT = re.compile(r'(primer|segund|tercer|cuart|quint|sext|s[eé]ptim|octav|noven|d[eé]cim)[ao]?\s+planta|planta\s+(\d+)|(\d+)[ªº]\s*planta', re.I)
@@ -117,35 +125,36 @@ for r in L:
     price = r['price'] or 0
     ag = (r.get('agency') or '').lower()
     if r.get('clientType') != 'professional' and not ag: rate = 0.0
-    elif 'redpiso' in ag: rate = 0.0484
-    else: rate = 0.0363
+    elif 'redpiso' in ag: rate = COM_RED
+    else: rate = COM_AG
     has_heat = r['heating'] == 1 or bool(HEAT_RE.search(HEAT_NEG.sub(' ', r['desc'] or '')))
-    eff = price * NEGO * (1 + rate) + (0 if has_heat else 10000) + price * NEGO * 0.06  # Pv: compra negociada + comisión (+10k sin calefacción)
+    eff = price * NEGO * (1 + rate) + (0 if has_heat else EXTRA_CAL) + price * NEGO * ITP  # Pv: compra negociada + comisión + ITP (+extra sin calefacción)
     surf = r['surface']
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
     eurm2 = price * NEGO * (1 + rate) / surf  # €/m² sobre Pv sin calefacción
     d_ac = AC_NEG.sub(' ', r['desc'] or '')  # quita menciones negadas, conserva las positivas
     has_ac = r.get('ac') == 1 or bool(AC_RE.search(d_ac))
     oris = orientations(r)
-    if oris & {'norte', 'noroeste'}: rejects['orient'] += 1; continue
-    if INTERIOR.search(INT_NEG.sub(' ', r['desc'] or '')): rejects['interior'] += 1; continue
-    if (r.get('pics') or 0) < 2: rejects['fotos'] += 1; continue
+    if REJ_ORI and oris & REJ_ORI: rejects['orient'] += 1; continue
+    if P['no_interiores'] and INTERIOR.search(INT_NEG.sub(' ', r['desc'] or '')): rejects['interior'] += 1; continue
+    if (r.get('pics') or 0) < P['min_fotos']: rejects['fotos'] += 1; continue
     if eff > PRICE_MAX: rejects['precio'] += 1; continue
     if eurm2 > EURM2_MAX: rejects['m2'] += 1; continue
-    if r['subtype'] in BAD_SUB: rejects['bajo'] += 1; continue
     fl = floor_of(r)
-    if fl is not None and fl < 1: rejects['bajo'] += 1; continue
-    if r['occupied'] or r['bare'] or r['rented'] or r['auction'] or NO_POSES.search(r['desc'] or ''):
+    if P['no_bajos'] and (r['subtype'] in BAD_SUB or (fl is not None and fl < 1)):
+        rejects['bajo'] += 1; continue
+    if P['no_ocupadas'] and (r['occupied'] or r['bare'] or r['rented'] or r['auction'] or NO_POSES.search(r['desc'] or '')):
         rejects['ocup'] += 1; continue
     has_elev = r['elevator'] == 1
-    if fl is not None and fl >= 3 and not has_elev:
+    if fl is not None and fl >= P['ascensor_desde'] and not has_elev:
         rejects['asc'] += 1; continue
-    if BAD_HOOD.search(r.get('hood') or ''):
+    if BAD_HOOD_FN(r.get('hood')):
         rejects['barrio'] += 1; continue
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None, None)
-    score = 100 - (10 if 'oeste' in oris else 0) - (0 if has_heat else 2) - (0 if has_ac else 5) \
-        - (5 if (zs[3] or 0) >= 25 else (2 if (zs[3] or 0) > 20 else 0)) - (5 if (zs[1] or 0) > 35 else 0) \
-        - (5 if surf < 75 else (3 if surf < 80 else 0)) - (0 if has_elev else 5)
+    score = 100 - (P['sc_oeste'] if 'oeste' in oris else 0) - (0 if has_heat else P['sc_sin_cal']) - (0 if has_ac else P['sc_sin_aire']) \
+        - (P['sc_car_25'] if (zs[3] or 0) >= P['car_u1'] else (P['sc_car_20'] if (zs[3] or 0) > P['car_u2'] else 0)) \
+        - (P['sc_tp_35'] if (zs[1] or 0) > P['tp_u'] else 0) \
+        - (P['sc_m2_75'] if surf < P['m2_u1'] else (P['sc_m2_80'] if surf < P['m2_u2'] else 0)) - (0 if has_elev else P['sc_sin_asc'])
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
                'ac': has_ac, 'score': score,
                'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2], 'car': zs[3], 'tpb': zs[4]})
