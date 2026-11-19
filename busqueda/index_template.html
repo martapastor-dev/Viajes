@@ -124,7 +124,8 @@ function renderMarkers(){
   const items=D.filter(x=>visible(x)&&(!src||x.src===src)&&(!staSel||x.sta===staSel)&&(!q||x.hood.toLowerCase().includes(q)));
   for(const x of items){
     if(x.lat==null) continue;
-    const c=favs.has(x.url)?'#e3a008':(x.rate>=0.04?'#d1242f':(x.rate>0?'#9a6700':'#1a7f37'));
+    const s=x.score==null?0:x.score;
+    const c=favs.has(x.url)?'#e3a008':(s>=90?'#1a7f37':(s>=70?'#d9a000':'#191919'));
     const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
     m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM · 🚗 ${x.car?x.car:'?'}' Boadilla · 🚇 ${x.tpb?Math.round(x.tpb):'?'}' Cd. Financiera<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>`);
     m.addTo(layer);
