@@ -111,7 +111,7 @@ function fill(p){
     const k=f[0],kind=f[3];
     const el=document.getElementById('p_'+k); if(!el)continue;
     if(kind==='bool') el.checked=!!p[k];
-    else if(kind==='pct') el.value=(p[k]*100).toFixed(2).replace('.',',');
+    else if(kind==='pct') el.value=(p[k]*100).toFixed(2);
     else el.value=p[k];
     if(f[5]) document.getElementById('p_'+f[5]).value=p[f[5]];
   }
@@ -150,7 +150,7 @@ document.getElementById('run').addEventListener('click',async()=>{
   try{localStorage.setItem('hestia_params_draft',JSON.stringify(params));}catch(e){}
   try{
     await api('/api/config','POST',{params});
-    const r=await api('/api/run','POST',{'params'});
+    const r=await api('/api/run','POST',{params});
     if(r.error){alert(r.error);b.disabled=false;return;}
     const iv=setInterval(async()=>{
       const s=await api('/api/status');
