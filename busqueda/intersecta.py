@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import json
+import json, os
 
-M = json.load(open('/home/ubuntu/zonas_mask.json'))
-CAR = json.load(open('/home/ubuntu/coche25.json'))
+HOME = os.path.dirname(os.path.abspath(__file__))
+M = json.load(open(os.path.join(HOME, 'zonas_mask.json')))
+CAR = json.load(open(os.path.join(HOME, 'coche25.json')))
 lats, lons, valid = M['lats'], M['lons'], M['valid']
 nR, nC = len(lats), len(lons)
 
@@ -44,7 +45,7 @@ nz = sum(map(sum, zone))
 print(f'celdas finales: {nz}')
 
 json.dump({'lats': lats, 'lons': lons, 'zone': zone, 'walk': M['walk'], 'tp': M['tp'], 'sta': M['sta']},
-          open('/home/ubuntu/zona_final.json', 'w'))
+          open(os.path.join(HOME, 'zona_final.json'), 'w'))
 
 # dibujar
 try:
@@ -61,7 +62,7 @@ try:
     plt.imshow(z, origin='lower', extent=[lons[0],lons[-1],lats[0],lats[-1]], cmap='Greens', alpha=.7)
     plt.plot([-3.8691104],[40.3930154],'r*',ms=15)   # CGS
     plt.plot([-3.69594],[40.42772],'b*',ms=15)       # Alonso Martínez
-    plt.savefig('/home/ubuntu/zona.png',dpi=110,bbox_inches='tight')
+    plt.savefig(os.path.join(HOME, 'zona.png'),dpi=110,bbox_inches='tight')
     print('png ok')
 except Exception as e:
     print('no plot:', e)

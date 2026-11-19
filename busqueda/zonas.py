@@ -7,7 +7,8 @@ sys.path.insert(0, HOME)
 from params import load as _pload
 P = _pload()
 
-BASE = '/home/ubuntu/repos/Viajes/hestia/dinamico'
+_cand = os.path.normpath(os.path.join(HOME, '..', 'hestia', 'dinamico'))
+BASE = _cand if os.path.isdir(_cand) else '/home/ubuntu/repos/Viajes/hestia/dinamico'
 
 def load_js(name, var):
     s = open(f'{BASE}/{name}').read()
@@ -142,7 +143,7 @@ print(f'celdas válidas (walk<={WALK_MAX} y TP<={TP_MAX}): {nv}/{nR*nC}')
 
 # guardar máscara y tiempos
 json.dump({'lats': lats, 'lons': lons, 'valid': valid, 'walk': bestw, 'tp': besttp, 'sta': beststa},
-          open('/home/ubuntu/zonas_mask.json', 'w'))
+          open(os.path.join(HOME, 'zonas_mask.json'), 'w'))
 
 # isócrona coche hora punta -> free-flow car_max/1.2
 req = round(float(P['car_max'])/1.2, 1)
@@ -151,5 +152,5 @@ r = requests.post('https://valhalla1.openstreetmap.de/isochrone', json={
     'contours': [{'time': req}], 'polygons': True, 'denoise': 0.2, 'generalize': 80}, timeout=60)
 print('valhalla', r.status_code)
 feat = r.json()['features'][0]
-json.dump(feat, open('/home/ubuntu/coche25.json', 'w'))
+json.dump(feat, open(os.path.join(HOME, 'coche25.json'), 'w'))
 print('ok')

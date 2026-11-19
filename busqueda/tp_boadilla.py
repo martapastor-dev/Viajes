@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Minutos en TP a la Ciudad Financiera (CGS) por celda: misma mecánica que zonas.py."""
-import json, math, heapq
+import json, math, heapq, os
 
-BASE = '/home/ubuntu/repos/Viajes/hestia/dinamico'
+HOME = os.path.dirname(os.path.abspath(__file__))
+_cand = os.path.normpath(os.path.join(HOME, '..', 'hestia', 'dinamico'))
+BASE = _cand if os.path.isdir(_cand) else '/home/ubuntu/repos/Viajes/hestia/dinamico'
 
 def load_js(name, var):
     s = open(f'{BASE}/{name}').read()
@@ -74,7 +76,7 @@ CGS = (40.3930154, -3.8691104)
 TB = computeTP(*CGS)
 print('estaciones alcanzables a Ciudad Financiera:', len(TB))
 
-Z = json.load(open('/home/ubuntu/zona_final.json'))
+Z = json.load(open(os.path.join(HOME, 'zona_final.json')))
 lats, lons = Z['lats'], Z['lons']
 nR, nC = len(lats), len(lons)
 dlat = lats[1]-lats[0]; dlon = lons[1]-lons[0]
@@ -110,6 +112,6 @@ for r in range(nR):
         tpb[r][c] = best
 
 Z['tpb'] = tpb
-json.dump(Z, open('/home/ubuntu/zona_final.json', 'w'))
+json.dump(Z, open(os.path.join(HOME, 'zona_final.json'), 'w'))
 vals = [v for row in tpb for v in row if v is not None]
 print('celdas con TP a CGS:', len(vals), 'min', round(min(vals)), 'max', round(max(vals)))

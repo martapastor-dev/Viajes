@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pipeline diario: Fotocasa + Pisos.com -> filtros Marta -> casas/index.html
 set -e
-cd /home/ubuntu
+cd "$(dirname "$0")"
 python3 zone_maybe.py
 python3 scrape_fotocasa.py
 python3 filtra.py | tail -3
