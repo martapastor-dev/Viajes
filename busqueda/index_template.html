@@ -38,6 +38,8 @@ a{color:var(--accent)}
 .count{color:var(--muted);font-weight:400}
 .card.fav{border-left:3px solid #e3a008}
 .card.del{opacity:.45}
+.card.seen{opacity:.55}
+.act.seen{color:var(--accent);border-color:var(--accent)}
 .acts{margin-left:auto;display:flex;gap:6px}
 .act{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:13px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6}
 .act.fav{color:#b8860b;border-color:#e3a008;background:#fff7e0}
@@ -74,14 +76,16 @@ a{color:var(--accent)}
 <script>
 const D = DATA;
 const ZONA = ZONE;
-let favs=new Set(), dels=new Set();
+let favs=new Set(), dels=new Set(), seen=new Set();
 try{
   favs=new Set(JSON.parse(localStorage.getItem('hestia_fav')||'[]'));
   dels=new Set(JSON.parse(localStorage.getItem('hestia_del')||'[]'));
+  seen=new Set(JSON.parse(localStorage.getItem('hestia_seen')||'[]'));
 }catch(e){}
 const save=()=>{try{
   localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
   localStorage.setItem('hestia_del',JSON.stringify([...dels]));
+  localStorage.setItem('hestia_seen',JSON.stringify([...seen]));
 }catch(e){}};
 let showDel=false, onlyFav=false;
 let map=null, layer=null;
@@ -150,11 +154,11 @@ function render(){
   let html='', lastHood='\u0000';
   for(const x of items){
     if(x.hood!==lastHood){html+=`<div class="group">${esc(x.hood)||'—'}</div>`;lastHood=x.hood;}
-    const isFav=favs.has(x.url), isDel=dels.has(x.url);
-    html+=`<a class="card${isFav?' fav':''}${isDel?' del':''}" href="${esc(x.url)}" target="_blank" rel="noopener">
+    const isFav=favs.has(x.url), isDel=dels.has(x.url), isSeen=seen.has(x.url);
+    html+=`<a class="card${isFav?' fav':''}${isDel?' del':''}${isSeen?' seen':''}" href="${esc(x.url)}" target="_blank" rel="noopener">
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'} · ${x.ac?'aire acond.':'<span class="no">sin aire</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
     </a>`;
   }
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';
@@ -171,6 +175,7 @@ list.addEventListener('click', e=>{
   e.preventDefault(); e.stopPropagation();
   const u=b.dataset.u;
   if(b.dataset.k==='fav'){favs.has(u)?favs.delete(u):favs.add(u);}
+  else if(b.dataset.k==='seen'){seen.has(u)?seen.delete(u):seen.add(u);}
   else{dels.has(u)?dels.delete(u):dels.add(u);}
   save(); render();
 });
