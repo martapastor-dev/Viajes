@@ -34,8 +34,8 @@ DEFAULTS = {
     'car_u1': 25, 'sc_car_25': 5,   # >=car_u1 min -> -sc_car_25
     'car_u2': 20, 'sc_car_20': 2,   # >car_u2 min -> -sc_car_20
     'tp_u': 35, 'sc_tp_35': 5,      # >tp_u min -> -sc_tp_35
-    'm2_u1': 75, 'sc_m2_75': 5,     # <m2_u1 -> -sc_m2_75
-    'm2_u2': 80, 'sc_m2_80': 3,     # <m2_u2 -> -sc_m2_80
+    'm2_u1': 75, 'sc_m2_75': 3,     # <m2_u1 -> -sc_m2_75
+    'm2_u2': 80, 'sc_m2_80': 0,     # <m2_u2 -> -sc_m2_80
     'sc_sin_asc': 5,
 }
 
