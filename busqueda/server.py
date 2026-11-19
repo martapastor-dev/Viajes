@@ -8,6 +8,8 @@ sys.path.insert(0, HOME)
 import params as params_mod
 
 DOCROOT = os.path.join(HOME, 'casas')
+if not os.path.isdir(DOCROOT):
+    DOCROOT = HOME  # en checkout del repo, config.html/index.html están junto al script
 LOG = os.path.join(HOME, 'run_daily.log')
 STATUS = os.path.join(HOME, 'run_status.json')
 _lock = threading.Lock()
@@ -85,9 +87,12 @@ class H(SimpleHTTPRequestHandler):
         t0 = time.time()
         try:
             with open(LOG, 'w') as f:
-                subprocess.run(['bash', os.path.join(HOME, 'run_daily.sh')],
-                               cwd=HOME, stdout=f, stderr=subprocess.STDOUT)
-            json.dump({'state': 'done', 'started': t0, 'ended': time.time()}, open(STATUS, 'w'))
+                r = subprocess.run(['bash', os.path.join(HOME, 'run_daily.sh')],
+                                   cwd=HOME, stdout=f, stderr=subprocess.STDOUT)
+            ok = r.returncode == 0 and 'PIPELINE_OK' in ''.join(tail_log(10))
+            st = 'done' if ok else 'error'
+            err = None if ok else f'run_daily.sh terminó con código {r.returncode}'
+            json.dump({'state': st, 'started': t0, 'ended': time.time(), 'error': err}, open(STATUS, 'w'))
         except Exception as e:
             json.dump({'state': 'error', 'started': t0, 'ended': time.time(), 'error': str(e)},
                       open(STATUS, 'w'))
