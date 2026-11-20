@@ -75,7 +75,7 @@ def reglas(p):
             if not tx:
                 continue
             out.append((g.get('campo') or 'anuncio', tx,
-                        g.get('tipo') or 'puntos', int(g.get('puntos') or 0)))
+                        g.get('tipo') or 'puntos', max(0, int(g.get('puntos') or 0))))
         except Exception:
             continue
     return out
