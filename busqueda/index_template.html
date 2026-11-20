@@ -69,7 +69,7 @@ a{color:var(--accent)}
 <option value="car">Minutos en coche a Boadilla</option>
 <option value="tp">Minutos en TP a Alonso Martínez</option>
 </select>
-<select id="src"><option value="">Fotocasa + Pisos</option><option value="Fotocasa">Solo Fotocasa</option><option value="Pisos">Solo Pisos</option></select>
+<select id="src"><option value="">Todos los portales</option></select>
 <button class="tgl" id="favs">★ favoritas</button><button class="tgl" id="showdel">ver ocultos</button>
 <div class="viewbtns"><button id="vlist" class="on">Lista</button><button id="vmap">Mapa</button></div>
 </div>
@@ -212,6 +212,11 @@ function render(){
   const sel=document.getElementById('sta');
   const stas=[...new Set(D.map(x=>x.sta).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
   for(const st of stas){const o=document.createElement('option');o.value=st;o.textContent=st;sel.appendChild(o);}
+}
+{
+  const sel=document.getElementById('src');
+  const srcs=[...new Set(D.map(x=>x.src).filter(Boolean))].sort();
+  for(const s of srcs){const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);}
 }
 for(const id of ['q','sort','src','sta']) document.getElementById(id).addEventListener('input', render);
 list.addEventListener('click', e=>{

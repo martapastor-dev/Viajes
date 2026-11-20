@@ -36,7 +36,50 @@ def zone_stats(lat, lon):
     _, rr, cc = best
     return Z['walk'][rr][cc], Z['tp'][rr][cc], Z['sta'][rr][cc], CART.get(f'{rr},{cc}'), Z.get('tpb', [[None]*nC for _ in range(nR)])[rr][cc]
 
-d = json.load(open(os.path.join(HOME, 'pisos_details.json')))
+def in_poly(lat, lon, geom):
+    polys = geom['coordinates'] if geom['type'] == 'MultiPolygon' else [geom['coordinates']]
+    for poly in polys:
+        inside = False
+        ring = poly[0]; j = len(ring)-1
+        for i in range(len(ring)):
+            xi, yi = ring[i][0], ring[i][1]
+            xj, yj = ring[j][0], ring[j][1]
+            if (yi > lat) != (yj > lat) and lon < (xj-xi)*(lat-yi)/(yj-yi)+xi:
+                inside = not inside
+            j = i
+        if inside:
+            for h in poly[1:]:
+                j = len(h)-1; inn = False
+                for i in range(len(h)):
+                    xi, yi = h[i][0], h[i][1]
+                    xj, yj = h[j][0], h[j][1]
+                    if (yi > lat) != (yj > lat) and lon < (xj-xi)*(lat-yi)/(yj-yi)+xi:
+                        inn = not inn
+                    j = i
+                if inn: return False
+            return True
+    return False
+
+CAR = json.load(open(os.path.join(HOME, 'coche25.json')))
+
+def in_zone(lat, lon):
+    if lat is None or lon is None: return False
+    if not in_poly(lat, lon, CAR['geometry']): return False
+    r = int((lat-lats[0])/dlat); c = int((lon-lons[0])/dlon)
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            rr, cc = r+dr, c+dc
+            if 0 <= rr < nR and 0 <= cc < nC and zone[rr][cc]:
+                return True
+    return False
+
+d = []
+for _f, _src in [('pisos_details.json', 'Pisos'), ('tc_details.json', 'Tecnocasa')]:
+    _p = os.path.join(HOME, _f)
+    if os.path.exists(_p):
+        for _c in json.load(open(_p)):
+            _c['src'] = _src
+            d.append(_c)
 ORI_WORD = re.compile(r'\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b', re.I)
 ORI_CTX = re.compile(r'orientaci[oó]n[^.\n]{0,60}', re.I)
 AC_RE = re.compile(r'aire\s+acondicionado|climatizaci[oó]n', re.I)
@@ -53,8 +96,9 @@ for c in d:
     r = None
     oris = orientations(c)
     if c.get('detail_err'): r = 'err'
+    elif not in_zone(c.get('lat'), c.get('lon')): r = 'zona'
     elif P['no_ocupadas'] and c.get('occ'): r = 'ocupada'
-    elif P['no_bajos'] and c['planta'] is not None and c['planta'] == 0: r = 'bajo'
+    elif P['no_bajos'] and c.get('planta') is not None and c.get('planta') == 0: r = 'bajo'
     elif P['no_interiores'] and c.get('interior'): r = 'interior'
     elif (c.get('pics') or 0) < P['min_fotos']: r = 'fotos'
     elif REJ_ORI and oris & REJ_ORI: r = 'orient'
@@ -67,7 +111,7 @@ for c in d:
         if eff > PM: r = 'precio-cal'
         elif c['price'] * NEGO * (1 + rate) / c['surface'] > E2: r = 'eurm2'  # €/m² sin calefacción ni ITP
         else:
-            fl = c['planta'] if c['planta'] is not None else c.get('floor')
+            fl = c.get('planta') if c.get('planta') is not None else c.get('floor')
             if fl is not None and fl >= P['ascensor_desde'] and not c.get('elev'): r = 'asc'
     if r: rej[r] = rej.get(r, 0) + 1
     else:
