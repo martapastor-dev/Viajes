@@ -104,9 +104,12 @@ async function loadMarks(){
   if(m){
     favs=new Set(m.fav||[]);dels=new Set(m.del||[]);seen=new Set(m.seen||[]);notes=m.notes||{};
     marksReady=true;
-    if(!favs.size&&!dels.size&&!seen.size&&(local.fav.length||local.del.length||local.seen.length)){
-      favs=new Set(local.fav);dels=new Set(local.del);seen=new Set(local.seen);
-      postMarks();
+    // primera vez en este navegador: subir sus marcas locales (unión con las del servidor)
+    if(localStorage.getItem('hestia_migrated')!=='1'&&(local.fav.length||local.del.length||local.seen.length)){
+      const n0=favs.size,d0=dels.size,s0=seen.size;
+      local.fav.forEach(u=>favs.add(u));local.del.forEach(u=>dels.add(u));local.seen.forEach(u=>seen.add(u));
+      localStorage.setItem('hestia_migrated','1');
+      if(favs.size!==n0||dels.size!==d0||seen.size!==s0) postMarks();
     }
   }else{
     favs=new Set(local.fav);dels=new Set(local.del);seen=new Set(local.seen);
