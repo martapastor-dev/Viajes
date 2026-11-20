@@ -20,8 +20,11 @@ h1{font-size:17px;font-weight:600}
 .controls input{flex:1;min-width:140px}
 main{padding:12px 16px;max-width:880px;margin:0 auto}
 .group{margin:18px 0 6px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);padding-bottom:4px}
-.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin:8px 0;text-decoration:none;color:var(--text)}
-.card:active{opacity:.7}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:8px 0}
+.cardlink{display:block;padding:10px 12px;text-decoration:none;color:var(--text)}
+.cardlink:active{opacity:.7}
+.note{border-top:1px dashed var(--border);padding:6px 12px}
+.note textarea{width:100%;font:inherit;font-size:13px;border:0;outline:0;background:transparent;resize:vertical;min-height:44px;color:var(--text)}
 .row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .price{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
 .eurm2{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -76,17 +79,40 @@ a{color:var(--accent)}
 <script>
 const D = DATA;
 const ZONA = ZONE;
-let favs=new Set(), dels=new Set(), seen=new Set();
-try{
-  favs=new Set(JSON.parse(localStorage.getItem('hestia_fav')||'[]'));
-  dels=new Set(JSON.parse(localStorage.getItem('hestia_del')||'[]'));
-  seen=new Set(JSON.parse(localStorage.getItem('hestia_seen')||'[]'));
-}catch(e){}
-const save=()=>{try{
-  localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
-  localStorage.setItem('hestia_del',JSON.stringify([...dels]));
-  localStorage.setItem('hestia_seen',JSON.stringify([...seen]));
-}catch(e){}};
+let favs=new Set(), dels=new Set(), seen=new Set(), notes={}, openNotes=new Set(), marksReady=false;
+function markBody(){return {fav:[...favs],del:[...dels],seen:[...seen],notes};}
+function postMarks(){fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(markBody())}).catch(()=>{});}
+let _svT=null;
+const save=()=>{
+  try{
+    localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
+    localStorage.setItem('hestia_del',JSON.stringify([...dels]));
+    localStorage.setItem('hestia_seen',JSON.stringify([...seen]));
+  }catch(e){}
+  clearTimeout(_svT);
+  _svT=setTimeout(()=>{if(marksReady) postMarks();},300);
+};
+async function loadMarks(){
+  const local={fav:[],del:[],seen:[]};
+  try{
+    local.fav=JSON.parse(localStorage.getItem('hestia_fav')||'[]');
+    local.del=JSON.parse(localStorage.getItem('hestia_del')||'[]');
+    local.seen=JSON.parse(localStorage.getItem('hestia_seen')||'[]');
+  }catch(e){}
+  let m=null;
+  try{const r=await fetch('/api/marks');if(r.ok)m=await r.json();}catch(e){}
+  if(m){
+    favs=new Set(m.fav||[]);dels=new Set(m.del||[]);seen=new Set(m.seen||[]);notes=m.notes||{};
+    marksReady=true;
+    if(!favs.size&&!dels.size&&!seen.size&&(local.fav.length||local.del.length||local.seen.length)){
+      favs=new Set(local.fav);dels=new Set(local.del);seen=new Set(local.seen);
+      postMarks();
+    }
+  }else{
+    favs=new Set(local.fav);dels=new Set(local.del);seen=new Set(local.seen);
+  }
+  render();
+}
 let showDel=false, onlyFav=false;
 let map=null, layer=null;
 function showMap(){
@@ -155,11 +181,15 @@ function render(){
   for(const x of items){
     if(x.hood!==lastHood){html+=`<div class="group">${esc(x.hood)||'—'}</div>`;lastHood=x.hood;}
     const isFav=favs.has(x.url), isDel=dels.has(x.url), isSeen=seen.has(x.url);
-    html+=`<a class="card${isFav?' fav':''}${isDel?' del':''}${isSeen?' seen':''}" href="${esc(x.url)}" target="_blank" rel="noopener">
+    const noteTxt=notes[x.url]||'';
+    html+=`<div class="card${isFav?' fav':''}${isDel?' del':''}${isSeen?' seen':''}">
+      <a class="cardlink" href="${esc(x.url)}" target="_blank" rel="noopener">
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'} · ${x.ac?'aire acond.':'<span class="no">sin aire</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
-    </a>`;
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act${noteTxt?' seen':''}" data-k="note" data-u="${esc(x.url)}" title="Notas">📝</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
+      </a>
+      <div class="note"${openNotes.has(x.url)||noteTxt?'':' style="display:none"'}><textarea data-u="${esc(x.url)}" placeholder="Notas de este anuncio…">${esc(noteTxt)}</textarea></div>
+    </div>`;
   }
   list.innerHTML = html || '<p style="padding:24px;color:var(--muted)">Sin resultados con ese filtro.</p>';
   if(map) renderMarkers();
@@ -174,16 +204,23 @@ list.addEventListener('click', e=>{
   const b=e.target.closest('.act'); if(!b) return;
   e.preventDefault(); e.stopPropagation();
   const u=b.dataset.u;
-  if(b.dataset.k==='fav'){favs.has(u)?favs.delete(u):favs.add(u);}
-  else if(b.dataset.k==='seen'){seen.has(u)?seen.delete(u):seen.add(u);}
-  else{dels.has(u)?dels.delete(u):dels.add(u);}
-  save(); render();
+  if(b.dataset.k==='fav'){favs.has(u)?favs.delete(u):favs.add(u);save();}
+  else if(b.dataset.k==='seen'){seen.has(u)?seen.delete(u):seen.add(u);save();}
+  else if(b.dataset.k==='note'){openNotes.has(u)?openNotes.delete(u):openNotes.add(u);}
+  else{dels.has(u)?dels.delete(u):dels.add(u);save();}
+  render();
 });
 document.getElementById('favs').addEventListener('click',()=>{onlyFav=!onlyFav;document.getElementById('favs').classList.toggle('on',onlyFav);render();});
 document.getElementById('showdel').addEventListener('click',()=>{showDel=!showDel;document.getElementById('showdel').classList.toggle('on',showDel);render();});
 document.getElementById('vlist').addEventListener('click', showList);
 document.getElementById('vmap').addEventListener('click', showMap);
+list.addEventListener('input', e=>{
+  const t=e.target.closest('textarea[data-u]'); if(!t) return;
+  if(t.value.trim()) notes[t.dataset.u]=t.value; else delete notes[t.dataset.u];
+  save();
+});
 render();
+loadMarks();
 </script>
 </body>
 </html>

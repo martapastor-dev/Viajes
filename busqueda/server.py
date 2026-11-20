@@ -12,7 +12,28 @@ if not os.path.isdir(DOCROOT):
     DOCROOT = HOME  # en checkout del repo, config.html/index.html están junto al script
 LOG = os.path.join(HOME, 'run_daily.log')
 STATUS = os.path.join(HOME, 'run_status.json')
+MARKS = os.path.join(DOCROOT, 'marks.json')
 _lock = threading.Lock()
+
+
+def read_marks():
+    try:
+        m = json.load(open(MARKS))
+        return {'fav': list(m.get('fav') or []), 'del': list(m.get('del') or []),
+                'seen': list(m.get('seen') or []), 'notes': dict(m.get('notes') or {})}
+    except Exception:
+        return {'fav': [], 'del': [], 'seen': [], 'notes': {}}
+
+
+def write_marks(m):
+    clean = {k: m.get(k) for k in ('fav', 'del', 'seen', 'notes')}
+    for k in ('fav', 'del', 'seen'):
+        clean[k] = [str(u) for u in (clean.get(k) or []) if u]
+    clean['notes'] = {str(u): str(t)[:2000] for u, t in (clean.get('notes') or {}).items() if u and str(t).strip()}
+    tmp = MARKS + '.tmp'
+    json.dump(clean, open(tmp, 'w'), ensure_ascii=False)
+    os.replace(tmp, MARKS)
+    return clean
 
 
 def read_status():
@@ -55,6 +76,8 @@ class H(SimpleHTTPRequestHandler):
             s = read_status()
             s['log'] = tail_log()
             return self._json(s)
+        if self.path.startswith('/api/marks'):
+            return self._json(read_marks())
         return super().do_GET()
 
     def do_POST(self):
@@ -68,6 +91,9 @@ class H(SimpleHTTPRequestHandler):
         if self.path.startswith('/api/config'):
             cur = params_mod.save(data.get('params', data))
             return self._json({'ok': True, 'params': cur})
+
+        if self.path.startswith('/api/marks'):
+            return self._json({'ok': True, 'marks': write_marks(data)})
 
         if self.path.startswith('/api/run'):
             with _lock:
