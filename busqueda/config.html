@@ -108,7 +108,7 @@ const escR=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'
 function renderReglas(){
   const box=document.getElementById('reglas');
   box.innerHTML=reglas.length?reglas.map((r,i)=>{
-    const t=r.tipo==='descartar'?'Descartar':'−'+(r.puntos||0)+' pts';
+    const t=r.tipo==='descartar'?'Descartar':'−'+(parseInt(r.puntos)||0)+' pts';
     const c=r.campo==='barrio'?'barrio':'anuncio';
     return `<div class="rule"><span class="rtag">${t} · ${c}</span><span class="rtxt">${escR(r.texto)}</span><button class="rdel" data-i="${i}">✕</button></div>`;
   }).join(''):'<div class="hint">Sin reglas personalizadas.</div>';
@@ -124,7 +124,7 @@ document.getElementById('reglas').addEventListener('click',e=>{
 document.getElementById('r_add').addEventListener('click',()=>{
   const tx=document.getElementById('r_texto').value.trim(); if(!tx)return;
   const r={tipo:document.getElementById('r_tipo').value,campo:document.getElementById('r_campo').value,texto:tx};
-  if(r.tipo==='puntos') r.puntos=parseInt(document.getElementById('r_puntos').value)||0;
+  if(r.tipo==='puntos') r.puntos=Math.max(1,parseInt(document.getElementById('r_puntos').value)||0);
   reglas.push(r); document.getElementById('r_texto').value='';
   renderReglas(); persist();
 });
