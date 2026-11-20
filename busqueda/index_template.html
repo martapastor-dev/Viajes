@@ -81,7 +81,18 @@ const D = DATA;
 const ZONA = ZONE;
 let favs=new Set(), dels=new Set(), seen=new Set(), notes={}, openNotes=new Set();
 function markBody(){return {fav:[...favs],del:[...dels],seen:[...seen],notes};}
-function sendOp(op){fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(op)}).catch(()=>{});}
+const outbox=[];let _flushing=false;
+async function flushOps(){
+  if(_flushing)return;_flushing=true;
+  while(outbox.length){
+    try{const r=await fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(outbox[0])});if(!r.ok)break;}
+    catch(e){break;}
+    outbox.shift();
+  }
+  _flushing=false;
+}
+setInterval(flushOps,20000);
+function sendOp(op){outbox.push(op);flushOps();}
 async function postMarks(){try{const r=await fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(markBody())});return r.ok;}catch(e){return false;}}
 const mirrorLocal=()=>{try{
   localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
