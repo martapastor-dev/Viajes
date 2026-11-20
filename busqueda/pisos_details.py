@@ -18,7 +18,7 @@ HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\b
 HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con|hay)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bpreinstalaci[oó]n\s+(?:de\s+|para\s+)?(?:calefacci[oó]n|radiadores|suelo\s+radiante)', re.I)
 INTERIOR = re.compile(r'\b(?:vivienda|piso|casa|estudio|[aá]tico|d[uú]plex|inmueble|apartamento)\s+interior\b|\binterior\b\s+(?:muy\s+)?(?:luminoso|soleado|tranquilo|pero)|orientaci[oó]n\s+interior\b|\b\d+[ªº]?\s*interior\b|\binterior\s+con\s+ascensor\b|\bes\s+interior\b|,\s*interior\b(?!\s+de\b)', re.I)
 INT_NEG = re.compile(r'(?:patio|escalera|portal|carpintería|carpinteria|armario|pasillo|vestíbulo|vestibulo|zona|acceso|visitas?)\s+interior|\bno\s+(?:es|sea|parece|es\s+una|es\s+un)\s+interior|(?:acceso|entrada|visitas?|zona)\s+(?:al\s+)?interior\s+del?\s+(?:edificio|portal|inmueble|bloque)|uso\s+interior|interiormente|interiorismo', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + INTERIOR.pattern + INT_NEG.pattern + 'sub2').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + INTERIOR.pattern + INT_NEG.pattern + 'sub3').encode()).hexdigest()[:8]  # invalida la caché si cambian las reglas
 
 sess = requests.Session(); sess.headers.update(UA)
 cands = json.load(open(os.path.join(D, 'pisos_cands.json')))
@@ -74,7 +74,7 @@ def fetch(c):
             if pm: pids.add(pm.group(1))
         c['pics'] = len(pids) or len(soup.select('.media-thumbnail'))
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
-                  'desc_head': desc[:400], 'ts': now, 'rv': RULE_V})
+                  'desc_head': desc[:4000], 'ts': now, 'rv': RULE_V})
     except Exception as e:
         c['detail_err'] = str(e)[:80]
     return c
