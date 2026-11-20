@@ -17,7 +17,7 @@ HEAT_RE = re.compile(r'calefacci[oó]n|radiadores|suelo\s+radiante|aerotermia|\b
 HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con|hay)\s+(?:calefacci[oó]n|radiadores|suelo\s+radiante)|\bpreinstalaci[oó]n\s+(?:de\s+|para\s+)?(?:calefacci[oó]n|radiadores|suelo\s+radiante)', re.I)
 INTERIOR = re.compile(r'\b(?:vivienda|piso|casa|estudio|[aá]tico|d[uú]plex|inmueble|apartamento)\s+interior\b|\binterior\b\s+(?:muy\s+)?(?:luminoso|soleado|tranquilo|pero)|orientaci[oó]n\s+interior\b|\b\d+[ªº]?\s*interior\b|\binterior\s+con\s+ascensor\b|\bes\s+interior\b|,\s*interior\b(?!\s+de\b)', re.I)
 INT_NEG = re.compile(r'(?:patio|escalera|portal|carpintería|carpinteria|armario|pasillo|vestíbulo|vestibulo|zona|acceso|visitas?)\s+interior|\bno\s+(?:es|sea|parece|es\s+una|es\s+un)\s+interior|(?:acceso|entrada|visitas?|zona)\s+(?:al\s+)?interior\s+del?\s+(?:edificio|portal|inmueble|bloque)|uso\s+interior|interiormente|interiorismo', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + INTERIOR.pattern + INT_NEG.pattern + 'tc2').encode()).hexdigest()[:8]
+RULE_V = hashlib.md5((NO_POSES.pattern + ORI_CTX.pattern + AC_TXT.pattern + AC_NEG.pattern + HEAT_RE.pattern + HEAT_NEG.pattern + INTERIOR.pattern + INT_NEG.pattern + 'tc3').encode()).hexdigest()[:8]
 FLOOR_TXT = re.compile(r'planta\s+baja|\bbajo\b|semis[oó]tano|s[oó]tano', re.I)
 ENTRE = re.compile(r'entreplanta|entresuelo', re.I)
 PLANTA_N = re.compile(r'planta\s+(\d+)|(\d+)[ªº]\s*planta|(?:primer|segund[ao]|tercer[ao]?|cuart[ao]|quint[ao]|sext[ao]|s[eé]ptim[ao]|octav[ao]|noven[ao]|d[eé]cim[ao])\s+planta', re.I)
@@ -34,9 +34,13 @@ prev = {c['id']: c for c in json.load(open(CACHE))} if os.path.exists(CACHE) els
 now = time.time()
 
 def strip_html(s):
-    s = html.unescape(s).replace('\\/', '/').replace('\\u00f1', 'ñ').replace('\\u00ed', 'í')
+    s = html.unescape(s)
+    s = re.sub(r'\\u([dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})',
+               lambda m: chr(0x10000 + ((int(m.group(1), 16) - 0xD800) << 10) + int(m.group(2), 16) - 0xDC00), s)
+    s = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), s)
+    s = s.replace('\\/', '/').replace('\\n', ' ').replace('\\"', '"')
     s = re.sub(r'<[^>]+>', ' ', s)
-    return html.unescape(s)
+    return html.unescape(s).encode('utf-8', 'ignore').decode('utf-8')
 
 def fetch(c):
     try:

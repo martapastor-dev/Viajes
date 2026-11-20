@@ -23,7 +23,7 @@ HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:calefacci[oó]n|radiadores|suelo\s+rad
 INTERIOR = re.compile(r'\b(?:vivienda|piso|casa|estudio|[aá]tico|d[uú]plex|inmueble|apartamento)\s+interior\b|\binterior\b\s+(?:muy\s+)?(?:luminoso|soleado|tranquilo|pero)|orientaci[oó]n\s+interior\b|\b\d+[ªº]?\s*interior\b|\binterior\s+con\s+ascensor\b|\bes\s+interior\b|,\s*interior\b(?!\s+de\b)', re.I)
 INT_NEG = re.compile(r'(?:patio|escalera|portal|carpintería|carpinteria|armario|pasillo|vestíbulo|vestibulo|zona|acceso|visitas?)\s+interior|\bno\s+(?:es|sea|parece|es\s+una|es\s+un)\s+interior|(?:acceso|entrada|visitas?|zona)\s+(?:al\s+)?interior\s+del?\s+(?:edificio|portal|inmueble|bloque)|uso\s+interior|interiormente|interiorismo', re.I)
 ASC_NEG = re.compile(r'\b(?:sin|no)\s+ascensor|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con|hay)\s+ascensor', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + 'hab2').encode()).hexdigest()[:8]
+RULE_V = hashlib.md5((NO_POSES.pattern + 'hab3').encode()).hexdigest()[:8]
 
 sess = requests.Session(); sess.headers.update(UA)
 prev = {c['id']: c for c in json.load(open(CACHE))} if os.path.exists(CACHE) else {}
@@ -40,20 +40,27 @@ def page(n):
     try:
         url = 'https://www.habitaclia.com/comprar/viviendas/madrid-provincia/madrid-capital/s' if n == 1 else LIST.format(n)
         r = sess.get(url, timeout=30)
-        if r.status_code != 200: return n, []
+        if r.status_code != 200: return n, None
         urls = re.findall(r'href="(/comprar/[^"]+/d)"', r.text)
         return n, ['https://www.habitaclia.com' + u for u in dict.fromkeys(urls)]
     except Exception:
         return n, None
 
-urls, seen = [], set()
+urls, seen, failed = [], set(), []
 with ThreadPoolExecutor(max_workers=4) as ex:
     for n, out in ex.map(page, range(1, MAXPAGES + 1)):
-        if not out: continue
+        if out is None:
+            failed.append(n); continue
         for u in out:
             if u not in seen:
                 seen.add(u); urls.append(u)
-print('urls:', len(urls))
+print('urls:', len(urls), 'failed:', failed)
+
+def jdesc(s):
+    s = re.sub(r'\\u([dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})',
+               lambda m: chr(0x10000 + ((int(m.group(1), 16) - 0xD800) << 10) + int(m.group(2), 16) - 0xDC00), s)
+    s = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), s)
+    return s.replace('\\n', ' ').replace('\\/', '/').encode('utf-8', 'ignore').decode('utf-8')
 
 def fetch(u):
     c = {'id': u.rsplit('/', 2)[-2] if u.endswith('/d') else u, 'url': u, 'src': 'Habitaclia'}
@@ -70,8 +77,12 @@ def fetch(u):
         c['surface'] = (apt.get('floorSize') or {}).get('value')
         c['rooms'] = apt.get('numberOfRooms')
         c['pics'] = len(apt.get('image') or [])
-        c['hood'] = (apt.get('address') or {}).get('addressLocality')
-        desc = (apt.get('name') or '') + '\n' + (apt.get('description') or '')
+        t2 = r.text.replace('\\"', '"')
+        m = re.search(r'"displayZoneLine":"((?:\\.|[^"])*)"', t2)
+        c['hood'] = jdesc(m.group(1)) if m else (apt.get('address') or {}).get('addressLocality')
+        descr = re.findall(r'"description":"((?:\\.|[^"])*)"', t2)
+        full = jdesc(max(descr, key=len)) if descr else (apt.get('description') or '')
+        desc = (apt.get('name') or '') + '\n' + full
         c['desc_head'] = desc[:4000]
         m = re.search(r'"coordinates":\{"latitude":([\d.\-]+),"longitude":([\d.\-]+)', r.text.replace('\\"', '"'))
         if m: c['lat'], c['lon'] = float(m.group(1)), float(m.group(2))
@@ -85,8 +96,8 @@ def fetch(u):
         fl = re.search(r'(?i)\bplanta\s+(\d+)|(\d+)[ªº]\s*planta|planta\s+(baja|intermedia)', desc)
         if fl:
             g = fl.group(1) or fl.group(2)
-            c['planta'] = int(g) if g else (0 if fl.group(3) == 'baja' else 2)
-        if 'Ático' in (apt.get('name') or ''): c['planta'] = 12
+            c['planta'] = int(g) if g else (0 if fl.group(3).lower() == 'baja' else 2)
+        if c['planta'] is None and re.search(r'(?i)\b[áa]tico\b', apt.get('name') or ''): c['planta'] = 12
         desc_ori = ' '.join(re.findall(r'(?i)\b(noro?este|suro?este|sureste|noreste|norte|sur|este|oeste)\b',
                                        ' '.join(ORI_CTX.findall(desc))))
         c['ori'] = desc_ori.lower()
@@ -103,8 +114,6 @@ for u in urls:
     if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE:
         continue
     todo.append(u)
-cands = [prev[u.rsplit('/', 2)[-2]] for u in urls if u.rsplit('/', 2)[-2] in prev and u not in {t.rsplit('/',2)[-2] for t in []}]
-# simplificar: fetch all todo, reuse cached for the rest
 res = {}
 for u in urls:
     cid = u.rsplit('/', 2)[-2]
@@ -115,7 +124,17 @@ print('cached:', len(res), 'to fetch:', len(urls) - len(res))
 todo = [u for u in urls if u not in res]
 with ThreadPoolExecutor(max_workers=8) as ex:
     for u, c in zip(todo, ex.map(fetch, todo)):
-        res[u] = c
+        cid = u.rsplit('/', 2)[-2]
+        if c.get('detail_err') and prev.get(cid) and not prev[cid].get('detail_err'):
+            res[u] = prev[cid]
+        else:
+            res[u] = c
+if failed:
+    live = {u.rsplit('/', 2)[-2] for u in urls}
+    for cid, c in prev.items():
+        if cid not in live and c.get('url') not in res:
+            res[c['url']] = c
+    print('cache por paginas fallidas:', len(res))
 out = list(res.values())
 out = [c for c in out if c.get('price') and c.get('surface') and c['price'] <= PRICE_MAX and (c['surface'] or 0) >= SURF_MIN]
 json.dump(out, open(CACHE, 'w'), ensure_ascii=False)

@@ -64,4 +64,10 @@ for n in list(failed):
         failed.remove(n)
 
 print('cands:', len(cands), 'failed:', failed)
+if failed and os.path.exists(D + '/tc_cands.json'):
+    prev = {c['id']: c for c in json.load(open(D + '/tc_cands.json'))}
+    for cid, c in prev.items():
+        if cid not in seen:
+            seen.add(cid); cands.append(c)
+    print('cands con cache por paginas fallidas:', len(cands))
 json.dump(cands, open(D + '/tc_cands.json', 'w'), ensure_ascii=False)
