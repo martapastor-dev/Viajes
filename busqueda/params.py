@@ -37,6 +37,8 @@ DEFAULTS = {
     'm2_u1': 75, 'sc_m2_75': 3,     # <m2_u1 -> -sc_m2_75
     'm2_u2': 80, 'sc_m2_80': 0,     # <m2_u2 -> -sc_m2_80
     'sc_sin_asc': 5,
+    # reglas personalizadas: [{'tipo':'descartar'|'puntos','campo':'anuncio'|'barrio','texto':str,'puntos':int}]
+    'reglas': [],
 }
 
 def load():
@@ -63,3 +65,28 @@ def bad_hood_fn(p):
 
 def rej_orient(p):
     return {norm(t) for t in str(p['orient_reject']).split(',') if t.strip()}
+
+def reglas(p):
+    """[(campo, texto_norm, tipo, puntos)] de params['reglas']."""
+    out = []
+    for g in (p.get('reglas') or []):
+        try:
+            tx = norm(str(g.get('texto') or ''))
+            if not tx:
+                continue
+            out.append((g.get('campo') or 'anuncio', tx,
+                        g.get('tipo') or 'puntos', int(g.get('puntos') or 0)))
+        except Exception:
+            continue
+    return out
+
+def regla_pen_y_drop(rules, txt_n, hood_n):
+    """(puntos a restar, descartar) para un anuncio con texto y barrio normalizados."""
+    pen = 0
+    for cp, tx, tp, pts in rules:
+        src = hood_n if cp == 'barrio' else txt_n
+        if tx in src:
+            if tp == 'descartar':
+                return pen, True
+            pen += pts
+    return pen, False

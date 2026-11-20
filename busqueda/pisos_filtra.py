@@ -4,7 +4,7 @@ import json, re, os, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HOME)
-from params import load as _pload, bad_hood_fn, rej_orient
+from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop
 
 P = _pload()
 PM = P['precio_max']
@@ -16,6 +16,7 @@ EXTRA_CAL = P['extra_sin_cal']
 E2 = P['eurm2_max']
 BAD_HOOD_FN = bad_hood_fn(P)
 REJ_ORI = rej_orient(P)
+REGLAS = _reglas(P)
 Z = json.load(open(os.path.join(HOME, 'zona_final.json')))
 CART = json.load(open(os.path.join(HOME, 'car_times.json')))
 lats, lons, zone = Z['lats'], Z['lons'], Z['zone']
@@ -58,6 +59,7 @@ for c in d:
     elif (c.get('pics') or 0) < P['min_fotos']: r = 'fotos'
     elif REJ_ORI and oris & REJ_ORI: r = 'orient'
     elif BAD_HOOD_FN(c.get('hood')): r = 'barrio'
+    elif regla_pen_y_drop(REGLAS, norm(c.get('desc_head') or ''), norm(c.get('hood') or ''))[1]: r = 'regla'
     else:
         ag = (c.get('agency') or '').lower()
         rate = COM_RED if 'redpiso' in ag else (COM_AG if ag else 0.0)
@@ -76,7 +78,8 @@ for c in d:
         c['score'] = 100 - (P['sc_oeste'] if 'oeste' in oris else 0) - (0 if c.get('heat') else P['sc_sin_cal']) - (0 if has_ac else P['sc_sin_aire']) \
             - (P['sc_car_25'] if (car or 0) >= P['car_u1'] else (P['sc_car_20'] if (car or 0) > P['car_u2'] else 0)) \
             - (P['sc_tp_35'] if (t or 0) > P['tp_u'] else 0) \
-            - (P['sc_m2_75'] if (c['surface'] or 0) < P['m2_u1'] else (P['sc_m2_80'] if (c['surface'] or 0) < P['m2_u2'] else 0)) - (0 if c.get('elev') else P['sc_sin_asc'])
+            - (P['sc_m2_75'] if (c['surface'] or 0) < P['m2_u1'] else (P['sc_m2_80'] if (c['surface'] or 0) < P['m2_u2'] else 0)) - (0 if c.get('elev') else P['sc_sin_asc']) \
+            - regla_pen_y_drop(REGLAS, norm(c.get('desc_head') or ''), norm(c.get('hood') or ''))[0]
         c.update({'eff': eff, 'eurm2': round(c['price'] * NEGO * (1 + rate) / c['surface']),
                   'walk': w, 'tp': t, 'sta': s, 'car': car, 'tpb': tb, 'oris': ' '.join(sorted(oris))})
         ok.append(c)

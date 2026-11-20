@@ -24,6 +24,7 @@ main{padding:12px 16px;max-width:880px;margin:0 auto}
 .cardlink{display:block;padding:10px 12px;text-decoration:none;color:var(--text)}
 .cardlink:active{opacity:.7}
 .note{border-top:1px dashed var(--border);padding:6px 12px}
+.newb{display:inline-block;background:var(--accent);color:var(--accent-fg);font-size:10px;font-weight:700;letter-spacing:.5px;padding:1px 7px;border-radius:99px;margin-bottom:4px}
 .note textarea{width:100%;font:inherit;font-size:13px;border:0;outline:0;background:transparent;resize:vertical;min-height:44px;color:var(--text)}
 .row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .price{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -196,6 +197,7 @@ function render(){
     const noteTxt=notes[x.url]||'';
     html+=`<div class="card${isFav?' fav':''}${isDel?' del':''}${isSeen?' seen':''}">
       <a class="cardlink" href="${esc(x.url)}" target="_blank" rel="noopener">
+      ${x.new?'<div><span class="newb">NUEVO</span></div>':''}
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'} · ${x.ac?'aire acond.':'<span class="no">sin aire</span>'}</div>
       <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act${noteTxt?' seen':''}" data-k="note" data-u="${esc(x.url)}" title="Notas">📝</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>

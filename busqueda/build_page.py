@@ -42,6 +42,17 @@ for r in pi:
                   'ac': r.get('ac'), 'score': r.get('score'),
                   'url': r['url'], 'rooms': None})
 
+KNOWN = os.path.join(HOME, 'known_urls.json')
+try:
+    known = set(json.load(open(KNOWN)))
+except Exception:
+    known = set()
+for it in items:
+    if it['url'] not in known:
+        it['new'] = True
+known |= {it['url'] for it in items}
+json.dump(sorted(known), open(KNOWN, 'w'), ensure_ascii=False)
+
 items.sort(key=lambda x: x['eurm2'])
 json.dump(items, open(os.path.join(OUT, 'items.json'), 'w'), ensure_ascii=False)
 

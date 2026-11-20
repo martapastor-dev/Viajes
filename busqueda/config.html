@@ -28,6 +28,13 @@ main{padding:12px 16px;max-width:880px;margin:0 auto}
 .btn:disabled{opacity:.5;cursor:default}
 #runbox{display:none;padding:14px 16px}
 #runlog{font:12px/1.5 ui-monospace,Menlo,monospace;background:#f4f4f4;border:1px solid var(--border);border-radius:var(--radius);padding:10px;max-height:200px;overflow:auto;white-space:pre-wrap}
+.rule{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin:6px 0}
+.rtag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:#eef3ff;color:var(--accent);white-space:nowrap}
+.rtxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdel{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:12px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6}
+#regform .f select,#regform .f input{font:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+#regform .f input[type=text]{flex:1;min-width:120px;text-align:left;width:auto}
+#regform .f input[type=number]{width:64px}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 </style>
@@ -39,6 +46,18 @@ main{padding:12px 16px;max-width:880px;margin:0 auto}
 </header>
 <main>
 <div id="form"></div>
+<div class="group">Reglas personalizadas <button class="btn" id="editreg" style="padding:2px 12px;font-size:12px">Editar</button></div>
+<div id="reglas"></div>
+<div id="regform" style="display:none">
+  <div class="f">
+    <select id="r_tipo"><option value="descartar">Descartar el anuncio</option><option value="puntos">Restar puntos</option></select>
+    <select id="r_campo"><option value="anuncio">si el anuncio contiene</option><option value="barrio">si el barrio contiene</option></select>
+    <input type="text" id="r_texto" placeholder="texto a buscar…">
+    <input type="number" id="r_puntos" value="5" min="1" max="100" title="puntos">
+    <button class="btn" id="r_add">Añadir regla</button>
+  </div>
+  <div class="hint">El texto se busca en la descripción y el título (o en el nombre del barrio), sin distinguir mayúsculas ni tildes.</div>
+</div>
 <div id="runbox">
   <div class="group">Búsqueda en marcha <span class="spin"></span></div>
   <div class="hint">Scrapeando Fotocasa y Pisos.com y aplicando los filtros (1–3 min).</div>
@@ -83,8 +102,32 @@ const GROUPS=[
   ['m2_u2','Puntos si superficie < m²:','m²','num',1,'sc_m2_80','−pts'],
   ['sc_sin_asc','Puntos si no tiene ascensor','−']]]
 ];
-let P={};
+let P={}, reglas=[];
 const form=document.getElementById('form');
+const escR=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderReglas(){
+  const box=document.getElementById('reglas');
+  box.innerHTML=reglas.length?reglas.map((r,i)=>{
+    const t=r.tipo==='descartar'?'Descartar':'−'+(r.puntos||0)+' pts';
+    const c=r.campo==='barrio'?'barrio':'anuncio';
+    return `<div class="rule"><span class="rtag">${t} · ${c}</span><span class="rtxt">${escR(r.texto)}</span><button class="rdel" data-i="${i}">✕</button></div>`;
+  }).join(''):'<div class="hint">Sin reglas personalizadas.</div>';
+}
+document.getElementById('editreg').addEventListener('click',()=>{
+  const f=document.getElementById('regform');
+  f.style.display=f.style.display==='none'?'block':'none';
+});
+document.getElementById('reglas').addEventListener('click',e=>{
+  const b=e.target.closest('.rdel'); if(!b)return;
+  reglas.splice(+b.dataset.i,1); renderReglas(); persist();
+});
+document.getElementById('r_add').addEventListener('click',()=>{
+  const tx=document.getElementById('r_texto').value.trim(); if(!tx)return;
+  const r={tipo:document.getElementById('r_tipo').value,campo:document.getElementById('r_campo').value,texto:tx};
+  if(r.tipo==='puntos') r.puntos=parseInt(document.getElementById('r_puntos').value)||0;
+  reglas.push(r); document.getElementById('r_texto').value='';
+  renderReglas(); persist();
+});
 function build(){
   let h='';
   for(const [g,fields] of GROUPS){
@@ -127,6 +170,7 @@ function collect(){
     else p[k]=parseFloat(String(el.value).replace(',','.'));
     if(f[5]) p[f[5]]=parseFloat(String(document.getElementById('p_'+f[5]).value).replace(',','.'));
   }
+  p.reglas=reglas;
   return p;
 }
 async function api(path,method,body){
@@ -140,6 +184,8 @@ function persist(){try{localStorage.setItem('hestia_params_draft',JSON.stringify
   try{srv=(await api('/api/config')).params||{};}catch(e){}
   try{draft=JSON.parse(localStorage.getItem('hestia_params_draft')||'{}');}catch(e){}
   P=Object.assign({},srv,draft);
+  reglas=Array.isArray(P.reglas)?P.reglas:[];
+  renderReglas();
   fill(P);
   form.addEventListener('input',persist);
 })();

@@ -3,7 +3,7 @@ import json, re, math, os, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HOME)
-from params import load as _pload, bad_hood_fn, rej_orient
+from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop
 
 P = _pload()
 PRICE_MAX = P['precio_max']
@@ -16,6 +16,7 @@ EURM2_MAX = P['eurm2_max']
 SURF_MIN = P['m2_min']
 BAD_HOOD_FN = bad_hood_fn(P)
 REJ_ORI = rej_orient(P)
+REGLAS = _reglas(P)
 
 Z = json.load(open(os.path.join(HOME, 'zona_final.json')))
 CAR = json.load(open(os.path.join(HOME, 'coche25.json')))
@@ -117,7 +118,7 @@ def floor_of(r):
 
 L = json.load(open(os.path.join(HOME, 'fc_raw.json')))
 ok, out = [], []
-rejects = {'zona':0,'precio':0,'m2':0,'sup':0,'bajo':0,'ocup':0,'asc':0,'orient':0,'interior':0,'fotos':0,'barrio':0}
+rejects = {'zona':0,'precio':0,'m2':0,'sup':0,'bajo':0,'ocup':0,'asc':0,'orient':0,'interior':0,'fotos':0,'barrio':0,'regla':0}
 for r in L:
     why = []
     if not in_zone(r['lat'], r['lon']):
@@ -150,11 +151,13 @@ for r in L:
         rejects['asc'] += 1; continue
     if BAD_HOOD_FN(r.get('hood')):
         rejects['barrio'] += 1; continue
+    rpen, rdrop = regla_pen_y_drop(REGLAS, norm(r['desc'] or ''), norm(r.get('hood') or ''))
+    if rdrop: rejects['regla'] += 1; continue
     zs = zone_stats(r['lat'], r['lon']) or (None, None, None, None, None)
     score = 100 - (P['sc_oeste'] if 'oeste' in oris else 0) - (0 if has_heat else P['sc_sin_cal']) - (0 if has_ac else P['sc_sin_aire']) \
         - (P['sc_car_25'] if (zs[3] or 0) >= P['car_u1'] else (P['sc_car_20'] if (zs[3] or 0) > P['car_u2'] else 0)) \
         - (P['sc_tp_35'] if (zs[1] or 0) > P['tp_u'] else 0) \
-        - (P['sc_m2_75'] if surf < P['m2_u1'] else (P['sc_m2_80'] if surf < P['m2_u2'] else 0)) - (0 if has_elev else P['sc_sin_asc'])
+        - (P['sc_m2_75'] if surf < P['m2_u1'] else (P['sc_m2_80'] if surf < P['m2_u2'] else 0)) - (0 if has_elev else P['sc_sin_asc']) - rpen
     ok.append({**r, 'eff': round(eff), 'rate': rate, 'eurm2': round(eurm2), 'floor': fl, 'elev': has_elev, 'heat': has_heat,
                'ac': has_ac, 'score': score,
                'oris': ' '.join(sorted(oris)), 'walk': zs[0], 'tp': zs[1], 'sta': zs[2], 'car': zs[3], 'tpb': zs[4]})
