@@ -14,6 +14,7 @@ LOG = os.path.join(HOME, 'run_daily.log')
 STATUS = os.path.join(HOME, 'run_status.json')
 MARKS = os.path.join(DOCROOT, 'marks.json')
 _lock = threading.Lock()
+_marks_lock = threading.Lock()
 
 
 def read_marks():
@@ -30,10 +31,39 @@ def write_marks(m):
     for k in ('fav', 'del', 'seen'):
         clean[k] = [str(u) for u in (clean.get(k) or []) if u]
     clean['notes'] = {str(u): str(t)[:2000] for u, t in (clean.get('notes') or {}).items() if u and str(t).strip()}
-    tmp = MARKS + '.tmp'
-    json.dump(clean, open(tmp, 'w'), ensure_ascii=False)
-    os.replace(tmp, MARKS)
+    with _marks_lock:
+        tmp = MARKS + '.tmp'
+        json.dump(clean, open(tmp, 'w'), ensure_ascii=False)
+        os.replace(tmp, MARKS)
     return clean
+
+
+def apply_mark_op(op):
+    """Un cambio puntual (una marca o una nota) sobre el estado guardado."""
+    o = op.get('op')
+    u = str(op.get('url') or '')
+    k = op.get('key')
+    if not u or (o == 'set' and k not in ('fav', 'del', 'seen')) or o not in ('set', 'note'):
+        return None
+    with _marks_lock:
+        m = read_marks()
+        if o == 'set':
+            s = set(m[k])
+            if op.get('value'):
+                s.add(u)
+            else:
+                s.discard(u)
+            m[k] = sorted(s)
+        else:
+            t = str(op.get('text') or '')[:2000]
+            if t.strip():
+                m['notes'][u] = t
+            else:
+                m['notes'].pop(u, None)
+        tmp = MARKS + '.tmp'
+        json.dump(m, open(tmp, 'w'), ensure_ascii=False)
+        os.replace(tmp, MARKS)
+        return m
 
 
 def read_status():
@@ -93,6 +123,11 @@ class H(SimpleHTTPRequestHandler):
             return self._json({'ok': True, 'params': cur})
 
         if self.path.startswith('/api/marks'):
+            if isinstance(data, dict) and data.get('op'):
+                out = apply_mark_op(data)
+                if out is None:
+                    return self._json({'error': 'op inválida'}, 400)
+                return self._json({'ok': True, 'marks': out})
             return self._json({'ok': True, 'marks': write_marks(data)})
 
         if self.path.startswith('/api/run'):
