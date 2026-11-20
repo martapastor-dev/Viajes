@@ -23,7 +23,7 @@ HEAT_NEG = re.compile(r'\b(?:sin|no)\s+(?:calefacci[oó]n|radiadores|suelo\s+rad
 INTERIOR = re.compile(r'\b(?:vivienda|piso|casa|estudio|[aá]tico|d[uú]plex|inmueble|apartamento)\s+interior\b|\binterior\b\s+(?:muy\s+)?(?:luminoso|soleado|tranquilo|pero)|orientaci[oó]n\s+interior\b|\b\d+[ªº]?\s*interior\b|\binterior\s+con\s+ascensor\b|\bes\s+interior\b|,\s*interior\b(?!\s+de\b)', re.I)
 INT_NEG = re.compile(r'(?:patio|escalera|portal|carpintería|carpinteria|armario|pasillo|vestíbulo|vestibulo|zona|acceso|visitas?)\s+interior|\bno\s+(?:es|sea|parece|es\s+una|es\s+un)\s+interior|(?:acceso|entrada|visitas?|zona)\s+(?:al\s+)?interior\s+del?\s+(?:edificio|portal|inmueble|bloque)|uso\s+interior|interiormente|interiorismo', re.I)
 ASC_NEG = re.compile(r'\b(?:sin|no)\s+ascensor|\bno\s+(?:tiene|dispone\s+de|cuenta\s+con|hay)\s+ascensor', re.I)
-RULE_V = hashlib.md5((NO_POSES.pattern + 'hab3').encode()).hexdigest()[:8]
+RULE_V = hashlib.md5((NO_POSES.pattern + 'hab4').encode()).hexdigest()[:8]
 
 sess = requests.Session(); sess.headers.update(UA)
 prev = {c['id']: c for c in json.load(open(CACHE))} if os.path.exists(CACHE) else {}
@@ -77,10 +77,17 @@ def fetch(u):
         c['surface'] = (apt.get('floorSize') or {}).get('value')
         c['rooms'] = apt.get('numberOfRooms')
         c['pics'] = len(apt.get('image') or [])
-        t2 = r.text.replace('\\"', '"')
-        m = re.search(r'"displayZoneLine":"((?:\\.|[^"])*)"', t2)
-        c['hood'] = jdesc(m.group(1)) if m else (apt.get('address') or {}).get('addressLocality')
-        descr = re.findall(r'"description":"((?:\\.|[^"])*)"', t2)
+        hood = None
+        m = re.search(r'\\"displayZoneLine\\":\\"(.*?)\\"(?=[,}])', r.text)
+        if m:
+            hood = jdesc(m.group(1))
+            nb = re.search(r'\\"type\\":\\"neighbourhood\\",\\"value\\":\\"(.*?)\\"', r.text)
+            if nb and jdesc(nb.group(1)).lower() not in hood.lower():
+                hood += ' ' + jdesc(nb.group(1))
+        c['hood'] = hood or (apt.get('address') or {}).get('addressLocality')
+        descr = re.findall(r'\\"description\\":\\"(.*?)\\"(?=[,}])', r.text)
+        if not descr:
+            descr = re.findall(r'"description":"((?:\\.|[^"\\])*)"', r.text)
         full = jdesc(max(descr, key=len)) if descr else (apt.get('description') or '')
         desc = (apt.get('name') or '') + '\n' + full
         c['desc_head'] = desc[:4000]
