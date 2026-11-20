@@ -79,19 +79,15 @@ a{color:var(--accent)}
 <script>
 const D = DATA;
 const ZONA = ZONE;
-let favs=new Set(), dels=new Set(), seen=new Set(), notes={}, openNotes=new Set(), marksReady=false;
+let favs=new Set(), dels=new Set(), seen=new Set(), notes={}, openNotes=new Set();
 function markBody(){return {fav:[...favs],del:[...dels],seen:[...seen],notes};}
-function postMarks(){fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(markBody())}).catch(()=>{});}
-let _svT=null;
-const save=()=>{
-  try{
-    localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
-    localStorage.setItem('hestia_del',JSON.stringify([...dels]));
-    localStorage.setItem('hestia_seen',JSON.stringify([...seen]));
-  }catch(e){}
-  clearTimeout(_svT);
-  _svT=setTimeout(()=>{if(marksReady) postMarks();},300);
-};
+function sendOp(op){fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(op)}).catch(()=>{});}
+async function postMarks(){try{const r=await fetch('/api/marks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(markBody())});return r.ok;}catch(e){return false;}}
+const mirrorLocal=()=>{try{
+  localStorage.setItem('hestia_fav',JSON.stringify([...favs]));
+  localStorage.setItem('hestia_del',JSON.stringify([...dels]));
+  localStorage.setItem('hestia_seen',JSON.stringify([...seen]));
+}catch(e){}};
 async function loadMarks(){
   const local={fav:[],del:[],seen:[]};
   try{
@@ -103,14 +99,16 @@ async function loadMarks(){
   try{const r=await fetch('/api/marks');if(r.ok)m=await r.json();}catch(e){}
   if(m){
     favs=new Set(m.fav||[]);dels=new Set(m.del||[]);seen=new Set(m.seen||[]);notes=m.notes||{};
-    marksReady=true;
     // primera vez en este navegador: subir sus marcas locales (unión con las del servidor)
-    if(localStorage.getItem('hestia_migrated')!=='1'&&(local.fav.length||local.del.length||local.seen.length)){
-      const n0=favs.size,d0=dels.size,s0=seen.size;
-      local.fav.forEach(u=>favs.add(u));local.del.forEach(u=>dels.add(u));local.seen.forEach(u=>seen.add(u));
-      localStorage.setItem('hestia_migrated','1');
-      if(favs.size!==n0||dels.size!==d0||seen.size!==s0) postMarks();
-    }
+    try{
+      if(localStorage.getItem('hestia_migrated')!=='1'&&(local.fav.length||local.del.length||local.seen.length)){
+        const n0=favs.size,d0=dels.size,s0=seen.size;
+        local.fav.forEach(u=>favs.add(u));local.del.forEach(u=>dels.add(u));local.seen.forEach(u=>seen.add(u));
+        if(favs.size!==n0||dels.size!==d0||seen.size!==s0){
+          if(await postMarks()) localStorage.setItem('hestia_migrated','1');
+        }else localStorage.setItem('hestia_migrated','1');
+      }
+    }catch(e){}
   }else{
     favs=new Set(local.fav);dels=new Set(local.del);seen=new Set(local.seen);
   }
@@ -206,21 +204,25 @@ for(const id of ['q','sort','src','sta']) document.getElementById(id).addEventLi
 list.addEventListener('click', e=>{
   const b=e.target.closest('.act'); if(!b) return;
   e.preventDefault(); e.stopPropagation();
-  const u=b.dataset.u;
-  if(b.dataset.k==='fav'){favs.has(u)?favs.delete(u):favs.add(u);save();}
-  else if(b.dataset.k==='seen'){seen.has(u)?seen.delete(u):seen.add(u);save();}
-  else if(b.dataset.k==='note'){openNotes.has(u)?openNotes.delete(u):openNotes.add(u);}
-  else{dels.has(u)?dels.delete(u):dels.add(u);save();}
-  render();
+  const u=b.dataset.u, k=b.dataset.k;
+  if(k==='note'){openNotes.has(u)?openNotes.delete(u):openNotes.add(u);render();return;}
+  const s=k==='fav'?favs:k==='seen'?seen:dels;
+  const v=!s.has(u);
+  v?s.add(u):s.delete(u);
+  sendOp({op:'set',key:k==='fav'?'fav':k==='seen'?'seen':'del',url:u,value:v});
+  mirrorLocal(); render();
 });
 document.getElementById('favs').addEventListener('click',()=>{onlyFav=!onlyFav;document.getElementById('favs').classList.toggle('on',onlyFav);render();});
 document.getElementById('showdel').addEventListener('click',()=>{showDel=!showDel;document.getElementById('showdel').classList.toggle('on',showDel);render();});
 document.getElementById('vlist').addEventListener('click', showList);
 document.getElementById('vmap').addEventListener('click', showMap);
+const _noteT={};
 list.addEventListener('input', e=>{
   const t=e.target.closest('textarea[data-u]'); if(!t) return;
-  if(t.value.trim()) notes[t.dataset.u]=t.value; else delete notes[t.dataset.u];
-  save();
+  const u=t.dataset.u;
+  if(t.value.trim()) notes[u]=t.value; else delete notes[u];
+  clearTimeout(_noteT[u]);
+  _noteT[u]=setTimeout(()=>sendOp({op:'note',url:u,text:t.value}),400);
 });
 render();
 loadMarks();
