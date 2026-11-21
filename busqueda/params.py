@@ -62,8 +62,8 @@ def norm(s):
 
 import re
 UTIL_RE = re.compile(
-    r'(\d{2,3}(?:[.,]\d+)?)\s*m(?:[²2]|etros)?\s*(?:de\s+)?(?:superficie\s+)?[uú]til(?:es)?\b|'
-    r'[uú]til(?:es)?\b[^.\n]{0,20}?(\d{2,3}(?:[.,]\d+)?)\s*m(?:[²2]|etros)?\b', re.I)
+    r'(\d{2,3}(?:[.,]\d+)?)\s*m(?:[²2]|etros)?\s*(?:cuadrados?\s+)?(?:de\s+)?(?:superficie\s+)?[uú]til(?:es)?\b|'
+    r'[uú]til(?:es)?\b[\s:=-]*(?:de\s+)?(\d{2,3}(?:[.,]\d+)?)\s*m(?:[²2]|etros)?\b', re.I)
 
 def util_of(desc):
     """m² útiles declarados en el texto del anuncio, o None."""
