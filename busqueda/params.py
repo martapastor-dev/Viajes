@@ -62,13 +62,13 @@ def norm(s):
 
 import re
 UTIL_RE = re.compile(
-    r'(\d{2,3})\s*m[²2]?\s*(?:de\s+)?(?:superficie\s+)?[uú]tiles?\b|'
-    r'(?:superficie|m²|m2)\s+[uú]til\w*[^.\n]{0,20}?(\d{2,3})\s*m', re.I)
+    r'(\d{2,3}(?:[.,]\d+)?)\s*m(?:[²2]|etros)?\s*(?:de\s+)?(?:superficie\s+)?[uú]til(?:es)?\b|'
+    r'[uú]til(?:es)?\b[^.\n]{0,20}?(\d{2,3}(?:[.,]\d+)?)\s*m(?:[²2]|etros)?\b', re.I)
 
 def util_of(desc):
     """m² útiles declarados en el texto del anuncio, o None."""
-    vals = [int(g) for m in UTIL_RE.finditer(desc or '')
-            for g in m.groups() if g and int(g) >= 20]
+    vals = [float(g.replace(',', '.')) for m in UTIL_RE.finditer(desc or '')
+            for g in m.groups() if g and float(g.replace(',', '.')) >= 20]
     return max(vals) if vals else None
 
 def bad_hood_fn(p):
