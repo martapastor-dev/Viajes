@@ -150,6 +150,11 @@ function showMap(){
     L.marker([ZONA.cgs[1],ZONA.cgs[0]]).addTo(map).bindTooltip('CGS (Boadilla)');
     L.marker([ZONA.am[1],ZONA.am[0]]).addTo(map).bindTooltip('Alonso Martínez');
     layer=L.layerGroup().addTo(map);
+    map.on('popupopen',e=>{
+      const u=e.popup._source&&e.popup._source._u;
+      const x=u&&D.find(i=>i.url===u);
+      if(x) e.popup.setContent(popupHtml(x));
+    });
   }
   setTimeout(()=>map.invalidateSize(),50);
   renderMarkers();
@@ -159,6 +164,7 @@ function showList(){
   document.getElementById('list').style.display='';
   document.getElementById('vlist').classList.add('on');
   document.getElementById('vmap').classList.remove('on');
+  render();
 }
 const visible=x=>(!dels.has(x.url)||showDel)&&(!onlyFav||favs.has(x.url));
 let markersByUrl={};
@@ -180,7 +186,7 @@ function renderMarkers(){
     const s=x.score==null?0:x.score;
     const c=favs.has(x.url)?'#e3a008':(s>=90?'#1a7f37':(s>=70?'#d9a000':'#191919'));
     const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
-    m.bindPopup(popupHtml(x));
+    m.bindPopup(popupHtml(x)); m._u=x.url;
     m.addTo(layer); markersByUrl[x.url]=m;
   }
 }
