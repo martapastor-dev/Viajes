@@ -47,6 +47,9 @@ a{color:var(--accent)}
 .acts{margin-left:auto;display:flex;gap:6px}
 .act{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:13px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6}
 .act.fav{color:#b8860b;border-color:#e3a008;background:#fff7e0}
+.leaflet-popup-content .acts{margin:6px 0 0}
+.leaflet-popup-content .note{border-top:0;padding:4px 0 0}
+.leaflet-popup-content .note textarea{border:1px solid var(--border);border-radius:6px;padding:4px;font-size:12px;background:var(--surface)}
 .tgl{font:inherit;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer}
 .tgl.on{background:#fff7e0;border-color:#e3a008}
 </style>
@@ -158,9 +161,16 @@ function showList(){
   document.getElementById('vmap').classList.remove('on');
 }
 const visible=x=>(!dels.has(x.url)||showDel)&&(!onlyFav||favs.has(x.url));
+let markersByUrl={};
+function popupHtml(x){
+  const isFav=favs.has(x.url), isDel=dels.has(x.url), isSeen=seen.has(x.url), noteTxt=notes[x.url]||'';
+  return `<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM · 🚗 ${x.car?x.car:'?'}' Boadilla · 🚇 ${x.tpb?Math.round(x.tpb):'?'}' Cd. Financiera<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>
+  <div class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}" title="Favorita">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act${noteTxt?' seen':''}" data-k="note" data-u="${esc(x.url)}" title="Notas">📝</button><button class="act" data-k="del" data-u="${esc(x.url)}" title="Ocultar">${isDel?'⟲':'✕'}</button></div>
+  <div class="note"${noteTxt?'':' style="display:none"'}><textarea data-u="${esc(x.url)}" placeholder="Notas de este anuncio…">${esc(noteTxt)}</textarea></div>`;
+}
 function renderMarkers(){
   if(!layer) return;
-  layer.clearLayers();
+  layer.clearLayers(); markersByUrl={};
   const q=document.getElementById('q').value.trim().toLowerCase();
   const src=document.getElementById('src').value;
   const staSel=document.getElementById('sta').value;
@@ -170,8 +180,8 @@ function renderMarkers(){
     const s=x.score==null?0:x.score;
     const c=favs.has(x.url)?'#e3a008':(s>=90?'#1a7f37':(s>=70?'#d9a000':'#191919'));
     const m=L.circleMarker([x.lat,x.lon],{radius:6,color:c,fillColor:c,fillOpacity:.75,weight:1});
-    m.bindPopup(`<b>${x.eff.toLocaleString('es-ES')} €</b> · ${x.m2} m²<br>${esc(x.hood)} · planta ${floorTxt(x.floor)}<br>🚶 ${x.walk?Math.round(x.walk):'?'}' ${esc(x.sta||'')} · 🚇 ${x.tp?Math.round(x.tp):'?'}' AM · 🚗 ${x.car?x.car:'?'}' Boadilla · 🚇 ${x.tpb?Math.round(x.tpb):'?'}' Cd. Financiera<br><a href="${esc(x.url)}" target="_blank">Ver anuncio (${esc(x.src)})</a>`);
-    m.addTo(layer);
+    m.bindPopup(popupHtml(x));
+    m.addTo(layer); markersByUrl[x.url]=m;
   }
 }
 const list = document.getElementById('list');
@@ -236,6 +246,29 @@ document.getElementById('vlist').addEventListener('click', showList);
 document.getElementById('vmap').addEventListener('click', showMap);
 const _noteT={};
 list.addEventListener('input', e=>{
+  const t=e.target.closest('textarea[data-u]'); if(!t) return;
+  const u=t.dataset.u;
+  if(t.value.trim()) notes[u]=t.value; else delete notes[u];
+  clearTimeout(_noteT[u]);
+  _noteT[u]=setTimeout(()=>sendOp({op:'note',url:u,text:t.value}),400);
+});
+document.getElementById('map').addEventListener('click', e=>{
+  const b=e.target.closest('.act'); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const u=b.dataset.u, k=b.dataset.k;
+  if(k==='note'){
+    const n=b.closest('.leaflet-popup-content')?.querySelector('.note');
+    if(n) n.style.display=n.style.display==='none'?'':'none';
+    return;
+  }
+  const s=k==='fav'?favs:k==='seen'?seen:dels;
+  const v=!s.has(u);
+  v?s.add(u):s.delete(u);
+  sendOp({op:'set',key:k==='fav'?'fav':k==='seen'?'seen':'del',url:u,value:v});
+  mirrorLocal(); render();
+  const nm=markersByUrl[u]; if(nm) nm.openPopup();
+});
+document.getElementById('map').addEventListener('input', e=>{
   const t=e.target.closest('textarea[data-u]'); if(!t) return;
   const u=t.dataset.u;
   if(t.value.trim()) notes[u]=t.value; else delete notes[u];
