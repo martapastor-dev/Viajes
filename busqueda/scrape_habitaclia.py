@@ -8,8 +8,9 @@ from concurrent.futures import ThreadPoolExecutor
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 D = os.path.dirname(os.path.abspath(__file__))
 LIST = 'https://www.habitaclia.com/comprar/viviendas/madrid-provincia/madrid-capital/s/{}'
-PRICE_MAX = 335000
-SURF_MIN = __import__('params').load().get('m2_min', 70)
+_P = __import__('params').load()
+SURF_MIN = _P.get('m2_min', 70)
+PRICE_MAX = int(_P['precio_max'] / _P['nego'])  # cota bruta del anuncio
 MAXPAGES = 40
 CACHE = os.path.join(D, 'hab_details.json')
 MAX_AGE = 5 * 86400

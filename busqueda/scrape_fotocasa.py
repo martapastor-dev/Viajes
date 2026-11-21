@@ -6,11 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 BASE = 'https://www.fotocasa.es'
-PRICE_MAX = 335000               # crudo: 280.000/0.85 ≈ 329.412 (particular con calefacción)
-EFF_PRICE_MAX = 260000/0.85      # 305.882 sobre precio efectivo
-PENALTY_HEATING = 10000
 EURM2_MAX = 3800
-SURF_MIN = __import__('params').load().get('m2_min', 70)
+_P = __import__('params').load()
+SURF_MIN = _P.get('m2_min', 70)
+PRICE_MAX = int(_P['precio_max'] / _P['nego'])  # cota bruta del anuncio
 
 D = os.path.dirname(os.path.abspath(__file__))
 Z = json.load(open(os.path.join(D,'zona_final.json')))
