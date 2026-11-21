@@ -9,7 +9,7 @@ UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, 
 BASE = 'https://www.pisos.com'
 LIST = BASE + '/venta/pisos-madrid_capital_zona_urbana/{}/'
 PRICE_MAX = 335000   # crudo: 280.000/0.85 ≈ 329.412 (particular con calefacción)
-SURF_MIN = 70
+SURF_MIN = __import__('params').load().get('m2_min', 70)
 MAXPAGES = 320
 
 D = os.path.dirname(os.path.abspath(__file__))

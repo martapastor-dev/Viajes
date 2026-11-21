@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 LIST = 'https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid/madrid.html/pag-{}'
 PRICE_MAX = 335000
-SURF_MIN = 70
+SURF_MIN = __import__('params').load().get('m2_min', 70)
 MAXPAGES = 80
 D = __import__('os').path.dirname(__import__('os').path.abspath(__file__))
 

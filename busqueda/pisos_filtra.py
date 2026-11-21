@@ -101,7 +101,7 @@ for c in d:
     elif P['no_bajos'] and c.get('planta') is not None and c.get('planta') == 0: r = 'bajo'
     elif P['no_interiores'] and c.get('interior'): r = 'interior'
     elif (c.get('pics') or 0) < P['min_fotos']: r = 'fotos'
-    elif (util_of(c.get('desc_head')) or P['util_min']) < P['util_min']: r = 'sup'
+    elif (c.get('surface') or 0) < P['m2_min'] or (util_of(c.get('desc_head')) or P['util_min']) < P['util_min']: r = 'sup'
     elif REJ_ORI and oris & REJ_ORI: r = 'orient'
     elif BAD_HOOD_FN(c.get('hood')): r = 'barrio'
     elif regla_pen_y_drop(REGLAS, norm(c.get('desc_head') or ''), norm(c.get('hood') or ''))[1]: r = 'regla'
