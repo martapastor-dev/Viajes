@@ -15,6 +15,7 @@ DEFAULTS = {
     'extra_sin_cal': 10000,   # coste extra si no hay calefacción
     'eurm2_max': 3800,        # €/m² máximo (sin calefacción ni ITP)
     'm2_min': 70,             # superficie mínima
+    'util_min': 53,           # superficie útil mínima si se indica en el anuncio
     # filtros
     'min_fotos': 2,
     'ascensor_desde': 3,      # desde esta planta exige ascensor
@@ -58,6 +59,17 @@ def save(p):
 def norm(s):
     return ''.join(c for c in unicodedata.normalize('NFD', (s or '').lower())
                    if unicodedata.category(c) != 'Mn')
+
+import re
+UTIL_RE = re.compile(
+    r'(\d{2,3})\s*m[²2]?\s*(?:de\s+)?(?:superficie\s+)?[uú]tiles?\b|'
+    r'(?:superficie|m²|m2)\s+[uú]til\w*[^.\n]{0,20}?(\d{2,3})\s*m', re.I)
+
+def util_of(desc):
+    """m² útiles declarados en el texto del anuncio, o None."""
+    vals = [int(g) for m in UTIL_RE.finditer(desc or '')
+            for g in m.groups() if g and int(g) >= 20]
+    return max(vals) if vals else None
 
 def bad_hood_fn(p):
     toks = [norm(t) for t in str(p['barrios_excl']).split(',') if t.strip()]

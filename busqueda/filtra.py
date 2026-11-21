@@ -3,7 +3,7 @@ import json, re, math, os, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HOME)
-from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop
+from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop, util_of
 
 P = _pload()
 PRICE_MAX = P['precio_max']
@@ -132,6 +132,8 @@ for r in L:
     eff = price * NEGO * (1 + rate) + (0 if has_heat else EXTRA_CAL) + price * NEGO * ITP  # Pv: compra negociada + comisión + ITP (+extra sin calefacción)
     surf = r['surface']
     if surf is None or surf < SURF_MIN: rejects['sup'] += 1; continue
+    ut = util_of(r['desc'])
+    if ut is not None and ut < P['util_min']: rejects['sup'] += 1; continue
     eurm2 = price * NEGO * (1 + rate) / surf  # €/m² sobre Pv sin calefacción
     d_ac = AC_NEG.sub(' ', r['desc'] or '')  # quita menciones negadas, conserva las positivas
     has_ac = r.get('ac') == 1 or bool(AC_RE.search(d_ac))

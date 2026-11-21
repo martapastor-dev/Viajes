@@ -4,7 +4,7 @@ import json, re, os, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HOME)
-from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop
+from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop, util_of
 
 P = _pload()
 PM = P['precio_max']
@@ -101,6 +101,7 @@ for c in d:
     elif P['no_bajos'] and c.get('planta') is not None and c.get('planta') == 0: r = 'bajo'
     elif P['no_interiores'] and c.get('interior'): r = 'interior'
     elif (c.get('pics') or 0) < P['min_fotos']: r = 'fotos'
+    elif (util_of(c.get('desc_head')) or 99) < P['util_min']: r = 'sup'
     elif REJ_ORI and oris & REJ_ORI: r = 'orient'
     elif BAD_HOOD_FN(c.get('hood')): r = 'barrio'
     elif regla_pen_y_drop(REGLAS, norm(c.get('desc_head') or ''), norm(c.get('hood') or ''))[1]: r = 'regla'
