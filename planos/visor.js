@@ -222,7 +222,7 @@ function mostrarAnuncio(a) {
 }
 
 Promise.all([fetch(idPlano + '/plano.json').then(r => r.json()), fetch('requisitos.json').then(r => r.json())]).then(([p, r]) => {
-  plano = p; req = r;
+  plano = p; req = { ...r, ...(p.requisitos || {}) };
   plano.original.archivo = idPlano + '/' + plano.original.archivo;
   document.title = plano.titulo;
   document.getElementById('titulo').textContent = plano.titulo;
