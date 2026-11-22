@@ -126,13 +126,28 @@ function entre(seg, estancias) {
   return n.length > 1 ? n.join(' – ') : (n[0] || '') + ' (fachada)';
 }
 
+function trocear(seg, estancias) {
+  const [a, b] = seg, dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+  const ts = [0, 1];
+  for (const e of [...plano.fijos, ...estancias]) for (const q of e.poligono) {
+    const t = ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / L2;
+    const d = Math.abs((q[0] - a[0]) * dy - (q[1] - a[1]) * dx) / Math.sqrt(L2);
+    if (t > 1e-6 && t < 1 - 1e-6 && d < 0.03) ts.push(t);
+  }
+  ts.sort((x, y) => x - y);
+  const p = t => [a[0] + dx * t, a[1] + dy * t];
+  return ts.slice(1).map((t, i) => [p(ts[i]), p(t)]).filter(([u, w]) => Math.hypot(w[0] - u[0], w[1] - u[1]) > 1e-4);
+}
+
 function mostrarObras(v) {
   const o = obrasDe(v), caja = document.getElementById('obras');
   if (v === plano.variantes[0]) { caja.innerHTML = '<p class="pequeno">Distribución original: sin obras.</p>'; return; }
   const fmt2 = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const lista = (items, estancias) => {
     const grupos = {};
-    for (const x of items) { const k = entre(x.seg, estancias); grupos[k] = (grupos[k] || 0) + x.largo; }
+    for (const x of items) for (const s of trocear(x.seg, estancias)) {
+      const k = entre(s, estancias); grupos[k] = (grupos[k] || 0) + Math.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1]);
+    }
     return Object.entries(grupos).sort((a, b) => b[1] - a[1])
       .map(([k, m]) => `<tr><td>${k}</td><td class="num">${fmt2(m)} m</td></tr>`).join('');
   };
