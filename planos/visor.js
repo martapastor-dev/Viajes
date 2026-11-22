@@ -54,7 +54,10 @@ const pts = p => p.map(q => q.join(',')).join(' ');
 
 function dibujar(v) {
   const t = plano.grosor_muro;
-  const svg = el('svg', { viewBox: '-0.6 -0.5 10.4 9.5', xmlns: NS });
+  const todos = [...plano.fijos, ...plano.variantes.flatMap(x => x.estancias)].flatMap(e => e.poligono);
+  const xs = todos.map(q => q[0]), ys = todos.map(q => q[1]);
+  const x0 = Math.min(...xs) - 0.6, y0 = Math.min(...ys) - 0.5, yMax = Math.max(...ys);
+  const svg = el('svg', { viewBox: `${x0} ${y0} ${Math.max(...xs) + 0.6 - x0} ${yMax + 0.9 - y0}`, xmlns: NS });
   const o = plano.original, s = o.px_por_m;
   const gFondo = el('g', {}, svg);
   for (const f of plano.fijos) el('polygon', { points: pts(f.poligono), fill: COLORES[f.tipo], stroke: '#666', 'stroke-width': 0.05, 'stroke-dasharray': '0.12 0.06' }, gFondo);
@@ -90,8 +93,8 @@ function dibujar(v) {
   el('image', { href: o.archivo, x: -o.origen_px[0] / s, y: -o.origen_px[1] / s, width: o.ancho_px / s, height: o.alto_px / s, opacity: 0.5 }, gFoto);
   svg.appendChild(gFoto);
   const gEsc = el('g', {}, svg);
-  el('line', { x1: 0, y1: 8.85, x2: 1, y2: 8.85, stroke: '#222', 'stroke-width': 0.04 }, gEsc);
-  const te = el('text', { x: 1.1, y: 8.92, 'font-size': 0.2 }, gEsc); te.textContent = '1 m';
+  el('line', { x1: 0, y1: yMax + 0.27, x2: 1, y2: yMax + 0.27, stroke: '#222', 'stroke-width': 0.04 }, gEsc);
+  const te = el('text', { x: 1.1, y: yMax + 0.34, 'font-size': 0.2 }, gEsc); te.textContent = '1 m';
   document.getElementById('plano').replaceChildren(svg);
   aplicarCapas();
 }
@@ -99,6 +102,7 @@ function dibujar(v) {
 function dibujarHueco(h, g, t) {
   const [ax, ay] = h.a, [bx, by] = h.b, dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy);
   el('line', { x1: ax, y1: ay, x2: bx, y2: by, stroke: '#fff', 'stroke-width': t + 0.02 }, g);
+  if (h.tipo === 'paso') return;
   if (h.tipo === 'ventana' || h.tipo === 'balconera') {
     const nx = -dy / L * t / 3, ny = dx / L * t / 3;
     for (const k of [-1, 0, 1]) el('line', { x1: ax + k * nx, y1: ay + k * ny, x2: bx + k * nx, y2: by + k * ny, stroke: '#7a8b99', 'stroke-width': 0.02 }, g);
@@ -255,9 +259,9 @@ function mostrarAnuncio(a) {
   const precio = a.precio.toLocaleString('es-ES') + ' €';
   const m2 = Math.round(a.precio / a.superficie).toLocaleString('es-ES');
   document.getElementById('anuncio').innerHTML = `
-    <p><strong>${precio}</strong> · ${a.superficie} m² útiles (${a.superficie_construida} construidos) · ${m2} €/m²</p>
+    <p><strong>${precio}</strong> · ${a.superficie} m²${a.superficie_construida ? ` útiles (${a.superficie_construida} construidos)` : ''} · ${m2} €/m²</p>
     <p class="pequeno">${a.habitaciones} hab. · ${a.banos} baño · Planta ${a.planta}<br>
-    ${a.direccion}, ${a.barrio}<br>${a.estado} · Orientación ${a.orientacion} · ${a.agencia}<br>${a.notas}</p>
+    ${a.direccion}, ${a.barrio}<br>${a.estado}${a.orientacion ? ' · Orientación ' + a.orientacion : ''} · ${a.agencia}<br>${a.notas}</p>
     <p><a href="${a.url}" target="_blank" rel="noopener">Ver anuncio en ${a.portal}</a> ·
     <a href="https://www.google.com/maps?q=${a.coordenadas.join(',')}" target="_blank" rel="noopener">Mapa</a></p>`;
 }
