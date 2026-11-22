@@ -88,6 +88,11 @@ class H(SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def end_headers(self):
+        # Evita que el navegador sirva HTML/JS cacheado de despliegues anteriores
+        self.send_header('Cache-Control', 'no-cache')
+        super().end_headers()
+
     def _json(self, obj, code=200):
         b = json.dumps(obj, ensure_ascii=False).encode()
         self.send_response(code)
