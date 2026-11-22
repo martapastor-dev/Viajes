@@ -77,6 +77,10 @@ function dibujar(v) {
   for (const e of v.estancias) el('polygon', { points: pts(e.poligono) }, gMuros);
   const gHuecos = el('g', {}, svg);
   for (const h of v.huecos) dibujarHueco(h, gHuecos, t);
+  const gObras = el('g', { id: 'capaObras', 'stroke-linecap': 'butt' }, svg);
+  const obras = obrasDe(v);
+  for (const o of obras.tirar) el('line', { x1: o.seg[0][0], y1: o.seg[0][1], x2: o.seg[1][0], y2: o.seg[1][1], stroke: '#d62828', 'stroke-width': t, 'stroke-dasharray': '0.1 0.06', opacity: 0.85 }, gObras);
+  for (const o of obras.construir) el('line', { x1: o.seg[0][0], y1: o.seg[0][1], x2: o.seg[1][0], y2: o.seg[1][1], stroke: '#2a9d8f', 'stroke-width': t + 0.02 }, gObras);
   const gTxt = el('g', { 'text-anchor': 'middle', fill: '#222' }, svg);
   for (const e of [...plano.fijos, ...v.estancias]) {
     const [cx, cy] = e.etiqueta || centroide(e.poligono);
@@ -110,9 +114,41 @@ function dibujarHueco(h, g, t) {
   el('path', { d: `M ${hx} ${hy} A ${L} ${L} 0 0 ${barrido} ${bx} ${by}`, fill: 'none', stroke: color, 'stroke-width': 0.02 }, g);
 }
 
+function obrasDe(v) {
+  const original = plano.variantes[0];
+  if (v === original) return { tirar: [], construir: [], mTirar: 0, mConstruir: 0 };
+  return compararMuros(original, v, plano.fijos);
+}
+
+function entre(seg, estancias) {
+  const m = [(seg[0][0] + seg[1][0]) / 2, (seg[0][1] + seg[1][1]) / 2];
+  const n = [...plano.fijos, ...estancias].filter(e => enBorde(m, e.poligono, 0.03)).map(e => e.nombre);
+  return n.length > 1 ? n.join(' – ') : (n[0] || '') + ' (fachada)';
+}
+
+function mostrarObras(v) {
+  const o = obrasDe(v), caja = document.getElementById('obras');
+  if (v === plano.variantes[0]) { caja.innerHTML = '<p class="pequeno">Distribución original: sin obras.</p>'; return; }
+  const fmt2 = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const lista = (items, estancias) => {
+    const grupos = {};
+    for (const x of items) { const k = entre(x.seg, estancias); grupos[k] = (grupos[k] || 0) + x.largo; }
+    return Object.entries(grupos).sort((a, b) => b[1] - a[1])
+      .map(([k, m]) => `<tr><td>${k}</td><td class="num">${fmt2(m)} m</td></tr>`).join('');
+  };
+  caja.innerHTML = `
+    <p><span style="color:#d62828">▬ Tirar: <strong>${fmt2(o.mTirar)} m</strong></span> ·
+       <span style="color:#2a9d8f">▬ Construir: <strong>${fmt2(o.mConstruir)} m</strong></span></p>
+    <table>
+      <tr><th colspan="2" style="color:#d62828">Tirar (entre estancias originales)</th></tr>${lista(o.tirar, plano.variantes[0].estancias)}
+      <tr><th colspan="2" style="color:#2a9d8f">Construir (entre estancias nuevas)</th></tr>${lista(o.construir, v.estancias)}
+    </table>
+    <p class="pequeno">Metros lineales por el eje del muro, sin contar huecos de puertas y ventanas. Cerrar una puerta antigua cuenta como construir; abrir una nueva en un muro que se queda, como tirar.</p>`;
+}
+
 function aplicarCapas() {
   const ver = (id, capa) => { const c = document.getElementById(capa); if (c) c.style.display = document.getElementById(id).checked ? '' : 'none'; };
-  ver('verOriginal', 'capaOriginal'); ver('verHumeda', 'capaHumeda'); ver('verMuebles', 'capaMuebles');
+  ver('verOriginal', 'capaOriginal'); ver('verHumeda', 'capaHumeda'); ver('verMuebles', 'capaMuebles'); ver('verObras', 'capaObras');
 }
 
 function evaluar(v) {
@@ -142,6 +178,7 @@ function mostrar(id) {
   actual = plano.variantes.find(v => v.id === id) || plano.variantes[0];
   document.querySelectorAll('#variantes button').forEach(b => b.classList.toggle('activo', b.dataset.id === actual.id));
   dibujar(actual);
+  mostrarObras(actual);
   document.getElementById('descripcion').textContent = actual.descripcion || '';
   document.getElementById('notas').innerHTML = (actual.notas || []).map(n => `<li>${n}</li>`).join('');
   document.getElementById('checks').innerHTML = evaluar(actual).map(c => {
@@ -176,7 +213,7 @@ Promise.all([fetch(idPlano + '/plano.json').then(r => r.json()), fetch('requisit
   document.getElementById('titulo').textContent = plano.titulo;
   document.getElementById('variantes').innerHTML = plano.variantes.map(v => `<button data-id="${v.id}">${v.nombre}</button>`).join('');
   document.querySelectorAll('#variantes button').forEach(b => b.onclick = () => mostrar(b.dataset.id));
-  ['verOriginal', 'verHumeda', 'verMuebles'].forEach(i => document.getElementById(i).onchange = aplicarCapas);
+  ['verOriginal', 'verHumeda', 'verMuebles', 'verObras'].forEach(i => document.getElementById(i).onchange = aplicarCapas);
   mostrarAnuncio(plano.anuncio);
   mostrar(params.get('v') || (plano.variantes[1] || plano.variantes[0]).id);
 });
