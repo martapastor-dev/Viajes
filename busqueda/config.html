@@ -125,7 +125,7 @@ function renderReglas(){
 }
 let OFF=new Set();
 const KL={};
-GROUPS.forEach(g=>g.items.forEach(f=>{KL[f[0]]=f[1]}));
+GROUPS.forEach(([g,fields])=>fields.forEach(f=>{KL[f[0]]=f[1]}));
 function applyOff(){
   document.querySelectorAll('#form .f[data-k]').forEach(d=>d.classList.toggle('off', OFF.has(d.dataset.k)));
   const dl=document.getElementById('deleted');
