@@ -160,6 +160,7 @@ for items in pages_items:
             'url': BASE + (it.get('detail', {}).get('es-ES') or ''),
             'desc': (it.get('description') or ''),
             'pics': sum(1 for m in (it.get('multimedia') or []) if m.get('type') == 'image'),
+            'plano': bool(it.get('hasFloorPlans')),
         }
         out.append(rec)
 

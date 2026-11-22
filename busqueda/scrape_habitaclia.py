@@ -78,6 +78,7 @@ def fetch(u):
         c['surface'] = (apt.get('floorSize') or {}).get('value')
         c['rooms'] = apt.get('numberOfRooms')
         c['pics'] = len(apt.get('image') or [])
+        c['plano'] = bool(re.search(r'\\"floorPlans\\":([1-9]\d*)', r.text))
         hood = None
         m = re.search(r'\\"displayZoneLine\\":\\"(.*?)\\"(?=[,}])', r.text)
         if m:
@@ -119,14 +120,14 @@ todo = []
 for u in urls:
     cid = u.rsplit('/', 2)[-2]
     p = prev.get(cid)
-    if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE:
+    if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and 'plano' in p:
         continue
     todo.append(u)
 res = {}
 for u in urls:
     cid = u.rsplit('/', 2)[-2]
     p = prev.get(cid)
-    if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE:
+    if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and 'plano' in p:
         res[u] = p
 print('cached:', len(res), 'to fetch:', len(urls) - len(res))
 todo = [u for u in urls if u not in res]

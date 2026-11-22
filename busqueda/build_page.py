@@ -26,7 +26,7 @@ for r in fc:
                   'hood': r['hood'] or r.get('ubic') or '', 'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'), 'tpb': r.get('tpb'),
                   'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'ac': r.get('ac'), 'score': r.get('score'),
-                  'sta': names.get(r.get('sta'), r.get('sta')), 'url': r['url'], 'rooms': r.get('rooms')})
+                  'sta': names.get(r.get('sta'), r.get('sta')), 'url': r['url'], 'rooms': r.get('rooms'), 'plano': r.get('plano')})
 for r in pi:
     if any(r['price'] == f['price'] and close(r, f) for f in fc):
         continue
@@ -40,7 +40,7 @@ for r in pi:
                   'walk': r['walk'], 'tp': r['tp'], 'car': r.get('car'), 'tpb': r.get('tpb'), 'sta': names.get(r.get('sta'), r.get('sta')),
                   'lat': r['lat'], 'lon': r['lon'], 'oris': r.get('oris') or '',
                   'ac': r.get('ac'), 'score': r.get('score'),
-                  'url': r['url'], 'rooms': None})
+                  'url': r['url'], 'rooms': None, 'plano': r.get('plano')})
 
 KNOWN = os.path.join(HOME, 'known_urls.json')
 try:

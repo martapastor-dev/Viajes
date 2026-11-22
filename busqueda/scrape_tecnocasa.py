@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Scrape tecnocasa.es madrid list pages: JSON embebido en :estate de cada estate-card."""
-import re, json, html, time, sys
+import re, json, html, time, sys, os
 import requests
 from concurrent.futures import ThreadPoolExecutor
 

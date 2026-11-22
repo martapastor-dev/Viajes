@@ -73,7 +73,7 @@ a{color:var(--accent)}
 <option value="tp">Minutos en TP a Alonso Martínez</option>
 </select>
 <select id="src"><option value="">Todos los portales</option></select>
-<button class="tgl" id="favs">★ favoritas</button><button class="tgl" id="showdel">ver ocultos</button>
+<button class="tgl" id="favs">★ favoritas</button><button class="tgl" id="plano">con plano</button><button class="tgl" id="showdel">ver ocultos</button>
 <div class="viewbtns"><button id="vlist" class="on">Lista</button><button id="vmap">Mapa</button></div>
 </div>
 </header>
@@ -129,7 +129,7 @@ async function loadMarks(){
   }
   render();
 }
-let showDel=false, onlyFav=false;
+let showDel=false, onlyFav=false, onlyPlano=false;
 let map=null, layer=null;
 function showMap(){
   document.getElementById('list').style.display='none';
@@ -166,7 +166,7 @@ function showList(){
   document.getElementById('vmap').classList.remove('on');
   render();
 }
-const visible=x=>(!dels.has(x.url)||showDel)&&(!onlyFav||favs.has(x.url));
+const visible=x=>(!dels.has(x.url)||showDel)&&(!onlyFav||favs.has(x.url))&&(!onlyPlano||x.plano);
 let markersByUrl={};
 function popupHtml(x){
   const isFav=favs.has(x.url), isDel=dels.has(x.url), isSeen=seen.has(x.url), noteTxt=notes[x.url]||'';
@@ -215,7 +215,7 @@ function render(){
       ${x.new?'<div><span class="newb">NUEVO</span></div>':''}
       <div class="row1"><span class="price">${fmt(x.eff)} €</span><span class="eurm2">${x.m2} m² · ${fmt(x.eurm2)} €/m²</span></div>
       <div class="row2">${x.rooms?x.rooms+' hab · ':''}planta ${floorTxt(x.floor)} · ${x.elev?'ascensor':'<span class="no">sin ascensor</span>'} · ${x.heat?'calefacción':'<span class="no">sin calefacción</span>'} · ${x.ac?'aire acond.':'<span class="no">sin aire</span>'}</div>
-      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act${noteTxt?' seen':''}" data-k="note" data-u="${esc(x.url)}" title="Notas">📝</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
+      <div class="row3"><span>🚶 ${x.walk?Math.round(x.walk):'?'}' a ${esc(x.sta)||'metro'}</span><span>🚇 ${x.tp?Math.round(x.tp):'?'}' a Alonso Martínez</span><span>🚗 ${x.car?x.car:'?'}' a Boadilla</span><span>🚇 ${x.tpb?Math.round(x.tpb):'?'}' a Cd. Financiera</span><span class="tag">${esc(x.src)}</span>${x.score!=null?`<span class="tag">⭐ ${x.score}</span>`:''}${x.plano?'<span class="tag">plano</span>':''}${x.oris?`<span class="tag">${esc(x.oris)}</span>`:''}${x.rate?`<span class="tag">${esc(x.agency||'agencia')} +${(x.rate*100).toFixed(2).replace('.',',')}% (anuncio ${fmt(x.price)} €)</span>`:'<span class="tag">particular</span>'}<span class="acts"><button class="act${isFav?' fav':''}" data-k="fav" data-u="${esc(x.url)}">${isFav?'★':'☆'}</button><button class="act${isSeen?' seen':''}" data-k="seen" data-u="${esc(x.url)}" title="Marcar como visto">👁</button><button class="act${noteTxt?' seen':''}" data-k="note" data-u="${esc(x.url)}" title="Notas">📝</button><button class="act" data-k="del" data-u="${esc(x.url)}">${isDel?'⟲':'✕'}</button></span></div>
       </a>
       <div class="note"${openNotes.has(x.url)||noteTxt?'':' style="display:none"'}><textarea data-u="${esc(x.url)}" placeholder="Notas de este anuncio…">${esc(noteTxt)}</textarea></div>
     </div>`;
@@ -247,6 +247,7 @@ list.addEventListener('click', e=>{
 });
 document.getElementById('favs').addEventListener('click',()=>{onlyFav=!onlyFav;document.getElementById('favs').classList.toggle('on',onlyFav);render();});
 document.getElementById('showdel').addEventListener('click',()=>{showDel=!showDel;document.getElementById('showdel').classList.toggle('on',showDel);render();});
+document.getElementById('plano').addEventListener('click',()=>{onlyPlano=!onlyPlano;document.getElementById('plano').classList.toggle('on',onlyPlano);render();});
 document.getElementById('vlist').addEventListener('click', showList);
 document.getElementById('vmap').addEventListener('click', showMap);
 const _noteT={};
