@@ -39,35 +39,37 @@ def parse(it):
 
     c['price'] = NUM(it.get('price'))
     m2c = re.search(r'(\d+)\s*m²\s*(?:construidos|de superficie)', low)
-    m2u = re.search(r'(\d+)\s*m²\s*(?:útiles|utiles)', low)
     m2 = m2c or re.search(r'(\d+)\s*m²', low)
     c['surface'] = int(m2.group(1)) if m2 else None
+    if not c['price'] or not c['surface']:
+        c['detail_err'] = 'sin-datos'
+        return c
     c['rooms'] = (lambda m: int(m.group(1)) if m else None)(re.search(r'(\d+)\s*habitacion', low))
     c['agency'] = it.get('agency') or None
     c['pics'] = it.get('pics') or 0
     c['lat'], c['lon'] = fnum(it.get('lat')), fnum(it.get('lon'))
     c['hood'] = (it.get('ubic') or '').strip() or None
     c['plano'] = bool(it.get('has_plan') or it.get('has_tour'))
-    c['desc_head'] = ((it.get('title') or '') + '\n' + (it.get('desc') or ''))[:4000]
+    c['desc_head'] = ((it.get('title') or '') + '\n' + feats + '\n' + (it.get('desc') or ''))[:4000]
 
     # planta
     c['planta'] = None
-    mf = re.search(r'(?:planta|piso)\s+(\d+)[ªº]?|(\d+)[ªº]\s*planta|planta\s+(baja|intermedia|sotano|semisotano)|\b(bajo|entreplanta|[aá]tico)\b', low)
+    mf = re.search(r'(?:planta|piso)\s+(\d+)[ªº]?|(\d+)[ªº]\s*planta|planta\s+(baja|intermedia|s[oó]tano|semis[oó]tano)|\b(bajo|entreplanta|[aá]tico)\b', low)
     if mf:
         if mf.group(1): c['planta'] = int(mf.group(1))
         elif mf.group(2): c['planta'] = int(mf.group(2))
         elif mf.group(3):
             v = mf.group(3); c['planta'] = 0 if v in ('baja', 'sotano', 'semisotano') else 1
         elif mf.group(4):
-            v = mf.group(4); c['planta'] = 0 if v in ('bajo', 'entreplanta') else 12
+            v = mf.group(4); c['planta'] = {'bajo': 0, 'entreplanta': 1}.get(v, 12)
     if re.search(r'\b[aá]tico\b', low) and (c['planta'] is None or c['planta'] >= 6):
         c['planta'] = 12
 
     # ascensor
-    if re.search(r'con\s+ascensor|ascensor\s+incluido|hay\s+ascensor|tiene\s+ascensor', low):
-        c['elev'] = True
-    elif ASC_NEG.search(low):
+    if ASC_NEG.search(low):
         c['elev'] = False
+    elif re.search(r'con\s+ascensor|ascensor\s+incluido|(?:hay|tiene|cuenta\s+con)\s+ascensor', ASC_NEG.sub(' ', low)):
+        c['elev'] = True
     else:
         c['elev'] = None
 
