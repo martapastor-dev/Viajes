@@ -5,11 +5,11 @@ import json, os, subprocess, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HOME)
-from params import load
+from params import load, effective
 
 LAST = os.path.join(HOME, 'zone_params.json')
 
-p = load()
+p = effective(load())
 cur = {k: p[k] for k in ('walk_max', 'tp_max', 'car_max')}
 try:
     last = json.load(open(LAST))
