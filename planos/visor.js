@@ -1,7 +1,7 @@
 const COLORES = { dormitorio: '#f3dfb8', salon: '#efd3a8', csc: '#efd3a8', cocina: '#d9e7c8', bano: '#cfe3ef', hall: '#e8e1d4', terraza: '#e4e4e4' };
 const NS = 'http://www.w3.org/2000/svg';
 const params = new URLSearchParams(location.search);
-const idPlano = params.get('id');
+const idPlano = /^[a-z0-9-]+$/.test(params.get('id') || '') ? params.get('id') : '';
 let plano, req, actual;
 
 function areaBruta(p) {
