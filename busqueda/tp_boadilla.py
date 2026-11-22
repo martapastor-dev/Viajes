@@ -87,7 +87,7 @@ for gi in W.get('cov', []):
 sk2keys = list(TB.keys())
 sla = {k: STA[k][0] for k in sk2keys}
 slo = {k: STA[k][1] for k in sk2keys}
-WALK_MAX = float(__import__('params').load().get('walk_max', 12))
+WALK_MAX = float(__import__('params').effective(__import__('params').load()).get('walk_max', 12))
 
 tpb = [[None]*nC for _ in range(nR)]
 for r in range(nR):
