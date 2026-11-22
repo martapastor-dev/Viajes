@@ -35,8 +35,11 @@ main{padding:12px 16px;max-width:880px;margin:0 auto}
 #reglas.edit .rdel{display:inline}
 .fdel{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:12px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6;display:none}
 body.edit .fdel{display:inline}
-.f.off{opacity:.45}
-.f.off>label{text-decoration:line-through}
+.f.off{display:none}
+#deleted{display:none;margin-top:8px}
+body.edit #deleted.show{display:block}
+#deleted .f{opacity:.55}
+.rrestore{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:12px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6}
 #regform .f select,#regform .f input{font:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text)}
 #regform .f input[type=text]{flex:1;min-width:120px;text-align:left;width:auto}
 #regform .f input[type=number]{width:64px}
@@ -52,6 +55,7 @@ body.edit .fdel{display:inline}
 <main>
 <div id="form"></div>
 <div class="group">Reglas personalizadas <button class="btn" id="editreg" style="padding:2px 12px;font-size:12px">Editar</button></div>
+<div id="deleted"></div>
 <div id="reglas"></div>
 <div id="regform" style="display:none">
   <div class="f">
@@ -120,8 +124,13 @@ function renderReglas(){
   }).join(''):'<div class="hint">Sin reglas personalizadas.</div>';
 }
 let OFF=new Set();
+const KL={};
+GROUPS.forEach(g=>g.items.forEach(f=>{KL[f[0]]=f[1]}));
 function applyOff(){
-  document.querySelectorAll('#form .f').forEach(d=>d.classList.toggle('off', OFF.has(d.dataset.k)));
+  document.querySelectorAll('#form .f[data-k]').forEach(d=>d.classList.toggle('off', OFF.has(d.dataset.k)));
+  const dl=document.getElementById('deleted');
+  dl.innerHTML=OFF.size?'<div class="gh">Reglas eliminadas</div>'+[...OFF].map(k=>`<div class="f"><label>${KL[k]||k}</label><button type="button" class="rrestore" data-k="${k}">↩ restaurar</button></div>`).join(''):'';
+  dl.classList.toggle('show', OFF.size>0);
 }
 document.getElementById('editreg').addEventListener('click',()=>{
   const f=document.getElementById('regform');
@@ -129,8 +138,8 @@ document.getElementById('editreg').addEventListener('click',()=>{
   document.getElementById('reglas').classList.toggle('edit', f.style.display!=='none');
   document.body.classList.toggle('edit', f.style.display!=='none');
 });
-form.addEventListener('click',e=>{
-  const b=e.target.closest('.fdel'); if(!b)return;
+document.body.addEventListener('click',e=>{
+  const b=e.target.closest('.fdel,.rrestore'); if(!b)return;
   const k=b.dataset.k;
   OFF.has(k)?OFF.delete(k):OFF.add(k);
   applyOff(); persist();
