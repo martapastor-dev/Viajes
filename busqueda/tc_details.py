@@ -84,7 +84,8 @@ def fetch(c):
         c['ori'] = desc_ori.lower()
         # fotos: count gallery images in detail JSON if available
         c['pics'] = max(c.get('pics') or 0, len(re.findall(r'&quot;gallery_media&quot;', t)))
-        c['plano'] = bool(re.search(r'&quot;floor_plans&quot;:(?!null)', t))
+        c['plano'] = bool(re.search(r'&quot;(?:floor_plans|virtual_tour)&quot;:(?!null)', t))
+        c['p3d'] = True
         c.pop('detail_err', None)
         c.update({'ts': now, 'rv': RULE_V})
     except Exception as e:
@@ -94,8 +95,8 @@ def fetch(c):
 todo = []
 for c in cands:
     p = prev.get(c['id'])
-    if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price'] and 'plano' in p:
-        c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'lat', 'lon', 'ts', 'rv', 'ori', 'ac', 'interior', 'pics', 'plano') if k in p})
+    if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price'] and 'p3d' in p:
+        c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'lat', 'lon', 'ts', 'rv', 'ori', 'ac', 'interior', 'pics', 'plano', 'p3d') if k in p})
     else:
         todo.append(c)
 

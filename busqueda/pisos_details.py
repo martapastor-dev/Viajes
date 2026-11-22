@@ -73,7 +73,8 @@ def fetch(c):
                            img.get('src') or img.get('data-src') or '')
             if pm: pids.add(pm.group(1))
         c['pics'] = len(pids) or len(soup.select('.media-thumbnail'))
-        c['plano'] = 'media-types-menu__button--floorplans' in r.text
+        c['plano'] = ('media-types-menu__button--floorplans' in r.text) or ('media-types-menu__button--tours' in r.text)
+        c['p3d'] = True
         c.update({'planta': planta, 'elev': asc, 'heat': cal, 'occ': bad_occ,
                   'desc_head': desc[:4000], 'ts': now, 'rv': RULE_V})
     except Exception as e:
@@ -84,8 +85,8 @@ todo = []
 for c in cands:
     p = prev.get(c['id'])
     if p and not p.get('detail_err') and p.get('rv') == RULE_V and p.get('ts', 0) > now - MAX_AGE and p.get('price') == c['price']:
-        if 'ori' in p and 'ac' in p and 'plano' in p:
-            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori', 'ac', 'interior', 'pics', 'plano') if k in p})
+        if 'ori' in p and 'ac' in p and 'p3d' in p:
+            c.update({k: p[k] for k in ('planta', 'elev', 'heat', 'occ', 'desc_head', 'agency', 'ts', 'rv', 'ori', 'ac', 'interior', 'pics', 'plano', 'p3d') if k in p})
         else:
             todo.append(c)  # la ficha en caché es anterior al campo 'ori'
     else:
