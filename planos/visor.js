@@ -166,6 +166,30 @@ function aplicarCapas() {
   ver('verOriginal', 'capaOriginal'); ver('verHumeda', 'capaHumeda'); ver('verMuebles', 'capaMuebles'); ver('verObras', 'capaObras');
 }
 
+const esquinas = m => [[m.x, m.y], [m.x + m.w, m.y], [m.x + m.w, m.y + m.h], [m.x, m.y + m.h]];
+
+function conflictos(v) {
+  const muebles = (v.muebles || []).filter(m => m.forma !== 'fregadero');
+  const solapa = (a, b) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.01 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.01;
+  const r = [];
+  for (let i = 0; i < muebles.length; i++) for (let j = i + 1; j < muebles.length; j++)
+    if (solapa(muebles[i], muebles[j])) r.push(`${muebles[i].nombre || 'Encimera'} y ${muebles[j].nombre || 'Encimera'}`);
+  for (const h of v.huecos.filter(h => h.tipo === 'puerta' || h.tipo === 'entrada')) {
+    const [ax, ay] = h.a, [bx, by] = h.b, L = Math.hypot(bx - ax, by - ay);
+    let nx = -(by - ay) / L, ny = (bx - ax) / L;
+    if (h.hacia && ((h.hacia[0] - ax) * nx + (h.hacia[1] - ay) * ny) < 0) { nx = -nx; ny = -ny; }
+    const xs = [ax, bx, ax + nx * L, bx + nx * L], ys = [ay, by, ay + ny * L, by + ny * L];
+    const caja = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+    for (const m of muebles) {
+      if (!solapa(caja, m)) continue;
+      const x0 = Math.max(caja.x, m.x), x1 = Math.min(caja.x + caja.w, m.x + m.w), y0 = Math.max(caja.y, m.y), y1 = Math.min(caja.y + caja.h, m.y + m.h);
+      const cx = Math.max(x0, Math.min(ax, x1)), cy = Math.max(y0, Math.min(ay, y1));
+      if (Math.hypot(cx - ax, cy - ay) < L - 0.01) r.push(`${m.nombre || 'Encimera'} tapa una puerta`);
+    }
+  }
+  return r;
+}
+
 function evaluar(v) {
   const area = e => areaUtil(e.poligono);
   const dorms = v.estancias.filter(e => e.tipo === 'dormitorio').map(area).sort((a, b) => b - a);
@@ -183,6 +207,23 @@ function evaluar(v) {
   fila(dorms[1] >= req.dormitorio_segundo_min, `Otro dormitorio de mínimo ${fmt(req.dormitorio_segundo_min)} m²`, dorms[1] ? fmt(dorms[1]) + ' m²' : 'no hay');
   fila(csc[0] >= req.cocina_salon_comedor_min, `Cocina-salón-comedor de mínimo ${fmt(req.cocina_salon_comedor_min)} m²`, csc[0] ? fmt(csc[0]) + ' m²' : 'cocina cerrada');
   fila(banos[0] >= req.bano_principal_min, `Baño de mínimo ${fmt(req.bano_principal_min)} m²`, banos[0] ? fmt(banos[0]) + ' m²' : 'no hay');
+  const dormsE = v.estancias.filter(e => e.tipo === 'dormitorio').sort((a, b) => area(b) - area(a));
+  const muebles = v.muebles || [];
+  const cabe = (m, [l, f]) => Math.max(m.w, m.h) >= l - 1e-6 && Math.min(m.w, m.h) >= f - 1e-6;
+  const metido = (m, p) => esquinas(m).every(q => dentro(q, p));
+  const cm = ([l, f]) => `${Math.round(l * 100)} × ${Math.round(f * 100)} cm`;
+  const escritorio = (e, med) => e && muebles.some(m => m.tipo === 'escritorio' && cabe(m, med) && metido(m, e.poligono));
+  const textoEsc = (e, med) => muebles.filter(m => m.tipo === 'escritorio' && e && metido(m, e.poligono)).map(m => cm([Math.max(m.w, m.h), Math.min(m.w, m.h)]))[0] || 'no hay';
+  fila(escritorio(dormsE[0], req.escritorio_dormitorio_grande), `Escritorio de mínimo ${cm(req.escritorio_dormitorio_grande)} en el dormitorio grande`, textoEsc(dormsE[0]));
+  fila(escritorio(dormsE[1], req.escritorio_dormitorio_segundo), `Escritorio de mínimo ${cm(req.escritorio_dormitorio_segundo)} en el otro dormitorio`, textoEsc(dormsE[1]));
+  const encimeras = muebles.filter(m => m.tipo === 'encimera');
+  const fondos = encimeras.map(m => Math.min(m.w, m.h));
+  fila(encimeras.length > 0 && fondos.every(f => f >= req.encimera_fondo - 1e-6), `Encimeras de ${Math.round(req.encimera_fondo * 100)} cm de fondo`, encimeras.length ? [...new Set(fondos.map(f => Math.round(f * 100) + ' cm'))].join(', ') : 'no hay');
+  const cocinas = v.estancias.filter(e => e.tipo === 'cocina' || e.tipo === 'csc').map(e => e.zona_cocina || e.poligono);
+  const nevera = muebles.find(m => m.tipo === 'nevera' && cocinas.some(p => metido(m, p)));
+  fila(!!nevera && cabe(nevera, [Math.max(...req.nevera), Math.min(...req.nevera)]), `Nevera estándar (${cm(req.nevera)}) en la cocina`, nevera ? cm([nevera.w, nevera.h]) : 'no hay');
+  const choques = conflictos(v);
+  fila(choques.length === 0, 'Muebles sin tapar puertas ni solaparse', choques.length ? choques.join('; ') : 'todo libre');
   fila(true, 'Terraza fuera de la parte editable', 'se mantiene igual');
   fila(fuera.length === 0, 'Cuartos húmedos en la zona de bajantes', fuera.length ? 'fuera: ' + fuera.join(', ') : 'todos dentro');
   fila(banos[1] >= req.bano_segundo_min, `Segundo baño de ${fmt(req.bano_segundo_min)} m² (opcional)`, banos[1] ? fmt(banos[1]) + ' m²' : 'no hay', true);

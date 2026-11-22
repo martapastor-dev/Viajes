@@ -3,5 +3,18 @@
   "dormitorio_segundo_min": 9,
   "cocina_salon_comedor_min": 22,
   "bano_principal_min": 3.5,
-  "bano_segundo_min": 2.5
+  "bano_segundo_min": 2.5,
+  "escritorio_dormitorio_grande": [
+    1.2,
+    0.6
+  ],
+  "escritorio_dormitorio_segundo": [
+    1.0,
+    0.5
+  ],
+  "encimera_fondo": 0.6,
+  "nevera": [
+    0.6,
+    0.65
+  ]
 }
