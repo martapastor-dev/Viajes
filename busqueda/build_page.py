@@ -16,6 +16,8 @@ fc = json.load(open(os.path.join(HOME, 'fc_ok.json')))
 pi = json.load(open(os.path.join(HOME, 'pisos_ok.json')))
 
 def close(a, b):
+    if a.get('lat') is None or b.get('lat') is None or a.get('lon') is None or b.get('lon') is None:
+        return False
     return abs(a['lat'] - b['lat']) < 0.0006 and abs(a['lon'] - b['lon']) < 0.0008
 
 items = []

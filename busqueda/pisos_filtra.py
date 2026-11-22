@@ -74,7 +74,7 @@ def in_zone(lat, lon):
     return False
 
 d = []
-for _f, _src in [('pisos_details.json', 'Pisos'), ('tc_details.json', 'Tecnocasa'), ('hab_details.json', 'Habitaclia')]:
+for _f, _src in [('pisos_details.json', 'Pisos'), ('tc_details.json', 'Tecnocasa'), ('hab_details.json', 'Habitaclia'), ('idealista_details.json', 'Idealista')]:
     _p = os.path.join(HOME, _f)
     if os.path.exists(_p):
         for _c in json.load(open(_p)):
