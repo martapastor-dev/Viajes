@@ -4,9 +4,9 @@ import json, re, os, sys
 
 HOME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HOME)
-from params import load as _pload, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop, util_of
+from params import load as _pload, effective as _eff, bad_hood_fn, rej_orient, norm, reglas as _reglas, regla_pen_y_drop, util_of
 
-P = _pload()
+P = _eff(_pload())
 PM = P['precio_max']
 NEGO = P['nego']
 ITP = P['itp']

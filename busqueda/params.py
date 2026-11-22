@@ -40,7 +40,31 @@ DEFAULTS = {
     'sc_sin_asc': 5,
     # reglas personalizadas: [{'tipo':'descartar'|'puntos','campo':'anuncio'|'barrio','texto':str,'puntos':int}]
     'reglas': [],
+    # reglas del formulario desactivadas con la papelera (claves de campo)
+    'reglas_off': [],
 }
+
+# Valor neutro cuando una regla del formulario está desactivada (reglas_off)
+OFF_VALUES = {
+    'precio_max': 1e7, 'nego': 1.0, 'itp': 0.0, 'com_redpiso': 0.0,
+    'com_agencia': 0.0, 'extra_sin_cal': 0, 'eurm2_max': 1e9,
+    'm2_min': 0, 'util_min': 0,
+    'min_fotos': 0, 'ascensor_desde': 1e9,
+    'no_bajos': False, 'no_ocupadas': False, 'no_interiores': False,
+    'orient_reject': '', 'barrios_excl': '', 'agencias_excl': '',
+    'walk_max': 1e9, 'tp_max': 1e9, 'car_max': 1e9,
+    'sc_oeste': 0, 'sc_sin_cal': 0, 'sc_sin_aire': 0, 'sc_sin_asc': 0,
+    'car_u1': 1e9, 'car_u2': 1e9, 'tp_u': 1e9,
+    'm2_u1': -1e9, 'm2_u2': -1e9,
+}
+
+def effective(p):
+    """Parámetros con las reglas desactivadas (reglas_off) neutralizadas."""
+    q = dict(p)
+    for k in (p.get('reglas_off') or []):
+        if k in OFF_VALUES:
+            q[k] = OFF_VALUES[k]
+    return q
 
 def load():
     p = dict(DEFAULTS)
