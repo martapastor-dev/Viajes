@@ -83,6 +83,13 @@ def parse(it):
 
 raw = [json.loads(l) for l in open(RAW, encoding='utf-8') if l.strip()]
 out = [parse(it) for it in raw]
+# anuncios borrados: guardados pero ya no salen en los resultados actuales (pics.json)
+_pics = os.path.join(os.path.dirname(RAW), 'pics.json')
+if os.path.exists(_pics):
+    _live = set(json.load(open(_pics)))
+    for c in out:
+        if c['url'] not in _live and not c.get('detail_err'):
+            c['detail_err'] = 'borrado'
 json.dump(out, open(OUT, 'w'), ensure_ascii=False)
 print('idealista:', len(out), '| con datos:', sum(1 for c in out if not c.get('detail_err')),
       '| sin coords:', sum(1 for c in out if c.get('lat') is None),
