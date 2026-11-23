@@ -1,0 +1,1733 @@
+{
+  "id": "idealista-112914434",
+  "titulo": "Piso en C/ Quero (Aluche)",
+  "anuncio": {
+    "portal": "Idealista",
+    "url": "https://www.idealista.com/inmueble/112914434/",
+    "precio": 269000,
+    "superficie": 65,
+    "superficie_construida": 71,
+    "habitaciones": 3,
+    "banos": 1,
+    "planta": "3ª exterior con ascensor",
+    "barrio": "Aluche, Latina, Madrid",
+    "direccion": "Calle de Quero",
+    "coordenadas": [
+      40.3923815,
+      -3.760918
+    ],
+    "estado": "Segunda mano / buen estado",
+    "orientacion": "este",
+    "agencia": "MASTERPISO",
+    "notas": "Construido en 1970. Terraza abierta, calefacción individual de gas natural. El plano no tiene cotas: se ha escalado para que la superficie construida sea de 71 m²; así salen unos 60 m² útiles interiores más 4,4 m² de terraza, que cuadra con los 65 m² útiles del anuncio."
+  },
+  "original": {
+    "archivo": "original.png",
+    "px_por_m": 62,
+    "origen_px": [
+      40.5,
+      95.5
+    ],
+    "ancho_px": 622,
+    "alto_px": 643
+  },
+  "grosor_muro": 0.18,
+  "zona_humeda": [
+    [
+      [
+        0,
+        4.952
+      ],
+      [
+        2.79,
+        4.952
+      ],
+      [
+        2.79,
+        7.669
+      ],
+      [
+        0,
+        7.669
+      ]
+    ],
+    [
+      [
+        5.815,
+        3.218
+      ],
+      [
+        8.597,
+        3.218
+      ],
+      [
+        8.597,
+        5.444
+      ],
+      [
+        5.815,
+        5.444
+      ]
+    ]
+  ],
+  "fijos": [
+    {
+      "nombre": "Terraza",
+      "tipo": "terraza",
+      "poligono": [
+        [
+          0.468,
+          -1.33
+        ],
+        [
+          4.3,
+          -1.33
+        ],
+        [
+          4.3,
+          0
+        ],
+        [
+          0.468,
+          0
+        ]
+      ]
+    }
+  ],
+  "variantes": [
+    {
+      "id": "original",
+      "nombre": "Original",
+      "descripcion": "Distribución actual del anuncio, redibujada a escala.",
+      "estancias": [
+        {
+          "nombre": "Salón",
+          "tipo": "salon",
+          "poligono": [
+            [
+              0.468,
+              0
+            ],
+            [
+              4.185,
+              0
+            ],
+            [
+              4.185,
+              3.71
+            ],
+            [
+              0.468,
+              3.71
+            ]
+          ]
+        },
+        {
+          "nombre": "Hab. 1",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.185,
+              0
+            ],
+            [
+              8.597,
+              0
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              5.815,
+              3.218
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              4.185,
+              2.718
+            ]
+          ]
+        },
+        {
+          "nombre": "Baño",
+          "tipo": "bano",
+          "poligono": [
+            [
+              5.815,
+              3.218
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              5.815,
+              5.444
+            ]
+          ]
+        },
+        {
+          "nombre": "Hab. 2",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.645,
+              5.444
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              8.597,
+              8.411
+            ],
+            [
+              4.645,
+              8.411
+            ]
+          ]
+        },
+        {
+          "nombre": "Hab. 3",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              2.79,
+              3.71
+            ],
+            [
+              4.645,
+              3.71
+            ],
+            [
+              4.645,
+              8.411
+            ],
+            [
+              2.79,
+              8.411
+            ]
+          ],
+          "etiqueta": [
+            3.72,
+            6.2
+          ]
+        },
+        {
+          "nombre": "Pasillo",
+          "tipo": "hall",
+          "poligono": [
+            [
+              4.185,
+              2.718
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              5.815,
+              5.444
+            ],
+            [
+              4.645,
+              5.444
+            ],
+            [
+              4.645,
+              3.71
+            ],
+            [
+              4.185,
+              3.71
+            ]
+          ],
+          "etiqueta": [
+            5.23,
+            4.0
+          ]
+        },
+        {
+          "nombre": "Hall",
+          "tipo": "hall",
+          "poligono": [
+            [
+              0.468,
+              3.71
+            ],
+            [
+              2.79,
+              3.71
+            ],
+            [
+              2.79,
+              4.952
+            ],
+            [
+              0.468,
+              4.952
+            ]
+          ]
+        },
+        {
+          "nombre": "Cocina",
+          "tipo": "cocina",
+          "poligono": [
+            [
+              0,
+              4.952
+            ],
+            [
+              2.79,
+              4.952
+            ],
+            [
+              2.79,
+              7.669
+            ],
+            [
+              0,
+              7.669
+            ]
+          ]
+        }
+      ],
+      "huecos": [
+        {
+          "tipo": "balconera",
+          "a": [
+            1.02,
+            0
+          ],
+          "b": [
+            2.91,
+            0
+          ]
+        },
+        {
+          "tipo": "entrada",
+          "a": [
+            0.468,
+            4.73
+          ],
+          "b": [
+            0.468,
+            3.9
+          ],
+          "hacia": [
+            0.9,
+            4.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.379,
+            2.718
+          ],
+          "b": [
+            5.315,
+            2.718
+          ],
+          "hacia": [
+            4.8,
+            2.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            5.815,
+            4.573
+          ],
+          "b": [
+            5.815,
+            3.815
+          ],
+          "hacia": [
+            6.2,
+            4.2
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.734,
+            5.444
+          ],
+          "b": [
+            5.669,
+            5.444
+          ],
+          "hacia": [
+            5.2,
+            5.9
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.645,
+            4.298
+          ],
+          "b": [
+            4.645,
+            5.089
+          ],
+          "hacia": [
+            5.0,
+            4.7
+          ]
+        },
+        {
+          "tipo": "paso",
+          "a": [
+            4.185,
+            2.718
+          ],
+          "b": [
+            4.185,
+            3.71
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            0.831,
+            3.71
+          ],
+          "b": [
+            1.685,
+            3.71
+          ],
+          "hacia": [
+            1.2,
+            3.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            1.54,
+            4.952
+          ],
+          "b": [
+            2.153,
+            4.952
+          ],
+          "hacia": [
+            1.85,
+            5.4
+          ]
+        }
+      ],
+      "muebles": []
+    },
+    {
+      "id": "A",
+      "nombre": "A · 2 dormitorios + 1 baño, cocina abierta",
+      "descripcion": "Se tiran los tabiques del hall con el salón y con la cocina: salón, hall y cocina forman la cocina-salón-comedor y se entra directamente a ella. Hab. 1 y Hab. 2 son los dormitorios; la Hab. 3 se queda como despacho o vestidor. El baño no cambia.",
+      "notas": [
+        "Obra mínima: solo se tira, no se construye ningún tabique.",
+        "La cocina-salón-comedor queda justa sobre el mínimo (cuenta el antiguo hall).",
+        "Comprobar que los tabiques del hall no son de carga."
+      ],
+      "estancias": [
+        {
+          "nombre": "Dormitorio 1",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.185,
+              0
+            ],
+            [
+              8.597,
+              0
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              5.815,
+              3.218
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              4.185,
+              2.718
+            ]
+          ]
+        },
+        {
+          "nombre": "Dormitorio 2",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.645,
+              5.444
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              8.597,
+              8.411
+            ],
+            [
+              4.645,
+              8.411
+            ]
+          ]
+        },
+        {
+          "nombre": "Baño",
+          "tipo": "bano",
+          "poligono": [
+            [
+              5.815,
+              3.218
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              5.815,
+              5.444
+            ]
+          ]
+        },
+        {
+          "nombre": "Despacho",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              2.79,
+              3.71
+            ],
+            [
+              4.645,
+              3.71
+            ],
+            [
+              4.645,
+              8.411
+            ],
+            [
+              2.79,
+              8.411
+            ]
+          ],
+          "etiqueta": [
+            3.72,
+            6.2
+          ]
+        },
+        {
+          "nombre": "Pasillo",
+          "tipo": "hall",
+          "poligono": [
+            [
+              4.185,
+              2.718
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              5.815,
+              5.444
+            ],
+            [
+              4.645,
+              5.444
+            ],
+            [
+              4.645,
+              3.71
+            ],
+            [
+              4.185,
+              3.71
+            ]
+          ],
+          "etiqueta": [
+            5.23,
+            4.0
+          ]
+        },
+        {
+          "nombre": "Cocina-salón-comedor",
+          "tipo": "csc",
+          "poligono": [
+            [
+              0.468,
+              0
+            ],
+            [
+              4.185,
+              0
+            ],
+            [
+              4.185,
+              3.71
+            ],
+            [
+              2.79,
+              3.71
+            ],
+            [
+              2.79,
+              7.669
+            ],
+            [
+              0,
+              7.669
+            ],
+            [
+              0,
+              4.952
+            ],
+            [
+              0.468,
+              4.952
+            ]
+          ],
+          "etiqueta": [
+            2.2,
+            1.4
+          ],
+          "zona_cocina": [
+            [
+              0,
+              4.952
+            ],
+            [
+              2.79,
+              4.952
+            ],
+            [
+              2.79,
+              7.669
+            ],
+            [
+              0,
+              7.669
+            ]
+          ]
+        }
+      ],
+      "huecos": [
+        {
+          "tipo": "balconera",
+          "a": [
+            1.02,
+            0
+          ],
+          "b": [
+            2.91,
+            0
+          ]
+        },
+        {
+          "tipo": "entrada",
+          "a": [
+            0.468,
+            4.73
+          ],
+          "b": [
+            0.468,
+            3.9
+          ],
+          "hacia": [
+            0.9,
+            4.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.379,
+            2.718
+          ],
+          "b": [
+            5.315,
+            2.718
+          ],
+          "hacia": [
+            4.8,
+            2.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            5.815,
+            4.573
+          ],
+          "b": [
+            5.815,
+            3.815
+          ],
+          "hacia": [
+            6.2,
+            4.2
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.734,
+            5.444
+          ],
+          "b": [
+            5.669,
+            5.444
+          ],
+          "hacia": [
+            5.2,
+            5.9
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.645,
+            4.298
+          ],
+          "b": [
+            4.645,
+            5.089
+          ],
+          "hacia": [
+            5.0,
+            4.7
+          ]
+        },
+        {
+          "tipo": "paso",
+          "a": [
+            4.185,
+            2.718
+          ],
+          "b": [
+            4.185,
+            3.71
+          ]
+        }
+      ],
+      "muebles": [
+        {
+          "nombre": "Cama 150",
+          "x": 6.6,
+          "y": 0.3,
+          "w": 1.9,
+          "h": 1.5
+        },
+        {
+          "nombre": "Escritorio",
+          "x": 4.4,
+          "y": 0.09,
+          "w": 1.2,
+          "h": 0.6,
+          "tipo": "escritorio"
+        },
+        {
+          "nombre": "Armario",
+          "x": 6.1,
+          "y": 2.53,
+          "w": 2.0,
+          "h": 0.6
+        },
+        {
+          "nombre": "Cama 135",
+          "x": 6.0,
+          "y": 6.42,
+          "w": 1.35,
+          "h": 1.9
+        },
+        {
+          "nombre": "Escritorio",
+          "x": 4.734,
+          "y": 6.6,
+          "w": 0.5,
+          "h": 1.0,
+          "tipo": "escritorio"
+        },
+        {
+          "nombre": "Armario",
+          "x": 7.908,
+          "y": 5.533,
+          "w": 0.6,
+          "h": 1.8
+        },
+        {
+          "nombre": "Bañera",
+          "x": 7.76,
+          "y": 3.4,
+          "w": 0.75,
+          "h": 1.7
+        },
+        {
+          "nombre": "WC",
+          "x": 6.9,
+          "y": 3.307,
+          "w": 0.45,
+          "h": 0.65
+        },
+        {
+          "nombre": "Lavabo",
+          "x": 6.8,
+          "y": 4.85,
+          "w": 0.6,
+          "h": 0.505
+        },
+        {
+          "nombre": "Nevera",
+          "x": 0.089,
+          "y": 5.041,
+          "w": 0.6,
+          "h": 0.65,
+          "tipo": "nevera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 0.089,
+          "y": 5.691,
+          "w": 0.6,
+          "h": 1.289,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 0.089,
+          "y": 6.98,
+          "w": 2.612,
+          "h": 0.6,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Fregadero",
+          "x": 1.0,
+          "y": 7.05,
+          "w": 0.6,
+          "h": 0.45,
+          "forma": "fregadero"
+        },
+        {
+          "nombre": "Sofá",
+          "x": 3.15,
+          "y": 0.5,
+          "w": 0.9,
+          "h": 2.0
+        },
+        {
+          "nombre": "Mesa",
+          "x": 0.9,
+          "y": 2.2,
+          "w": 1.4,
+          "h": 0.8
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "nombre": "B · 2 dormitorios + 2 baños pegados",
+      "descripcion": "Parte de la A. Los dos baños van juntos donde hoy está la cocina y la cocina pasa a la zona del baño actual, abierta al pasillo. Salón, hall, Hab. 3 (zona abierta), pasillo y cocina forman la cocina-salón-comedor. El baño 1 se abre desde el antiguo hall y el baño 2 desde el comedor; ninguno da a la cocina.",
+      "notas": [
+        "Es la única forma de tener los dos baños pegados dentro de las bajantes: el baño actual (5,3 m²) no da para 3,5 + 2,5 m².",
+        "Se cambian de sitio la cocina y el baño: hay que llevar agua y desagües nuevos a las dos zonas de bajantes.",
+        "La cocina queda al fondo del pasillo, entre los dos dormitorios, y no junto al salón.",
+        "El baño 2 mide 1,0 m de ancho: ducha al fondo, lavabo junto a la puerta y WC enfrente de la ducha.",
+        "Comprobar que los tabiques que se tiran (hall, Hab. 3, pasillo–baño) no son de carga."
+      ],
+      "estancias": [
+        {
+          "nombre": "Dormitorio 1",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.185,
+              0
+            ],
+            [
+              8.597,
+              0
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              5.815,
+              3.218
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              4.185,
+              2.718
+            ]
+          ]
+        },
+        {
+          "nombre": "Dormitorio 2",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.645,
+              5.444
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              8.597,
+              8.411
+            ],
+            [
+              4.645,
+              8.411
+            ]
+          ]
+        },
+        {
+          "nombre": "Baño 1",
+          "tipo": "bano",
+          "poligono": [
+            [
+              0,
+              4.952
+            ],
+            [
+              1.59,
+              4.952
+            ],
+            [
+              1.59,
+              7.669
+            ],
+            [
+              0,
+              7.669
+            ]
+          ],
+          "etiqueta": [
+            1.05,
+            6.1
+          ]
+        },
+        {
+          "nombre": "Baño 2",
+          "tipo": "bano",
+          "poligono": [
+            [
+              1.59,
+              4.952
+            ],
+            [
+              2.79,
+              4.952
+            ],
+            [
+              2.79,
+              7.669
+            ],
+            [
+              1.59,
+              7.669
+            ]
+          ],
+          "etiqueta": [
+            2.4,
+            6.45
+          ]
+        },
+        {
+          "nombre": "Cocina-salón-comedor",
+          "tipo": "csc",
+          "poligono": [
+            [
+              0.468,
+              0
+            ],
+            [
+              4.185,
+              0
+            ],
+            [
+              4.185,
+              2.718
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              5.815,
+              3.218
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              4.645,
+              5.444
+            ],
+            [
+              4.645,
+              8.411
+            ],
+            [
+              2.79,
+              8.411
+            ],
+            [
+              2.79,
+              4.952
+            ],
+            [
+              0.468,
+              4.952
+            ]
+          ],
+          "etiqueta": [
+            2.2,
+            1.4
+          ],
+          "zona_cocina": [
+            [
+              5.815,
+              3.218
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              5.815,
+              5.444
+            ]
+          ]
+        }
+      ],
+      "huecos": [
+        {
+          "tipo": "balconera",
+          "a": [
+            1.02,
+            0
+          ],
+          "b": [
+            2.91,
+            0
+          ]
+        },
+        {
+          "tipo": "entrada",
+          "a": [
+            0.468,
+            4.73
+          ],
+          "b": [
+            0.468,
+            3.9
+          ],
+          "hacia": [
+            0.9,
+            4.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.379,
+            2.718
+          ],
+          "b": [
+            5.315,
+            2.718
+          ],
+          "hacia": [
+            4.8,
+            2.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.734,
+            5.444
+          ],
+          "b": [
+            5.669,
+            5.444
+          ],
+          "hacia": [
+            5.2,
+            5.9
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            0.6,
+            4.952
+          ],
+          "b": [
+            1.3,
+            4.952
+          ],
+          "hacia": [
+            0.95,
+            5.4
+          ]
+        },
+        {
+          "tipo": "paso",
+          "a": [
+            5.815,
+            3.218
+          ],
+          "b": [
+            5.815,
+            5.444
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            2.79,
+            6.0
+          ],
+          "b": [
+            2.79,
+            6.7
+          ],
+          "hacia": [
+            3.2,
+            6.35
+          ]
+        }
+      ],
+      "muebles": [
+        {
+          "nombre": "Cama 150",
+          "x": 6.6,
+          "y": 0.3,
+          "w": 1.9,
+          "h": 1.5
+        },
+        {
+          "nombre": "Escritorio",
+          "x": 4.4,
+          "y": 0.09,
+          "w": 1.2,
+          "h": 0.6,
+          "tipo": "escritorio"
+        },
+        {
+          "nombre": "Armario",
+          "x": 6.1,
+          "y": 2.53,
+          "w": 2.0,
+          "h": 0.6
+        },
+        {
+          "nombre": "Cama 135",
+          "x": 6.0,
+          "y": 6.42,
+          "w": 1.35,
+          "h": 1.9
+        },
+        {
+          "nombre": "Escritorio",
+          "x": 4.734,
+          "y": 6.6,
+          "w": 0.5,
+          "h": 1.0,
+          "tipo": "escritorio"
+        },
+        {
+          "nombre": "Armario",
+          "x": 7.908,
+          "y": 5.533,
+          "w": 0.6,
+          "h": 1.8
+        },
+        {
+          "nombre": "Lavabo",
+          "x": 0.09,
+          "y": 5.75,
+          "w": 0.5,
+          "h": 0.6
+        },
+        {
+          "nombre": "WC",
+          "x": 0.09,
+          "y": 6.4,
+          "w": 0.65,
+          "h": 0.45
+        },
+        {
+          "nombre": "Ducha",
+          "x": 0.09,
+          "y": 6.879,
+          "w": 1.41,
+          "h": 0.7
+        },
+        {
+          "nombre": "Nevera",
+          "x": 5.905,
+          "y": 3.308,
+          "w": 0.6,
+          "h": 0.65,
+          "tipo": "nevera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 6.505,
+          "y": 3.308,
+          "w": 1.402,
+          "h": 0.6,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 7.907,
+          "y": 3.308,
+          "w": 0.6,
+          "h": 2.046,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Fregadero",
+          "x": 7.98,
+          "y": 4.3,
+          "w": 0.45,
+          "h": 0.6,
+          "forma": "fregadero"
+        },
+        {
+          "nombre": "Sofá",
+          "x": 3.15,
+          "y": 0.5,
+          "w": 0.9,
+          "h": 2.0
+        },
+        {
+          "nombre": "Mesa",
+          "x": 0.9,
+          "y": 2.2,
+          "w": 1.4,
+          "h": 0.8
+        },
+        {
+          "nombre": "Ducha",
+          "x": 1.68,
+          "y": 5.042,
+          "w": 1.02,
+          "h": 0.8
+        },
+        {
+          "nombre": "Lavabo",
+          "x": 1.68,
+          "y": 6.1,
+          "w": 0.4,
+          "h": 0.5
+        },
+        {
+          "nombre": "WC",
+          "x": 1.97,
+          "y": 6.929,
+          "w": 0.45,
+          "h": 0.65
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "nombre": "C · 2 dormitorios + 2 baños, baño 2 junto al baño 1",
+      "descripcion": "Parte de la A. La cocina se queda en su sitio y abierta al salón. El dormitorio 2 pasa a la Hab. 3 y se une con la parte baja de la Hab. 2 original. El baño 2 sale de la parte alta de la Hab. 2 original, pegado al baño 1, y se entra por el pasillo, que se alarga.",
+      "notas": [
+        "El baño 2 queda fuera de la zona de bajantes, pegado al baño 1: hay que comprobar que su desagüe llega a la bajante del baño 1 con pendiente.",
+        "El dormitorio 2 queda en forma de L: la Hab. 3 hace de zona de estudio y vestidor y la cama va en la parte de la Hab. 2 original.",
+        "La puerta del dormitorio 2 es la que tenía la Hab. 3.",
+        "Comprobar que los tabiques que se tiran no son de carga."
+      ],
+      "estancias": [
+        {
+          "nombre": "Dormitorio 1",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              4.185,
+              0
+            ],
+            [
+              8.597,
+              0
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              5.815,
+              3.218
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              4.185,
+              2.718
+            ]
+          ]
+        },
+        {
+          "nombre": "Dormitorio 2",
+          "tipo": "dormitorio",
+          "poligono": [
+            [
+              2.79,
+              3.71
+            ],
+            [
+              4.645,
+              3.71
+            ],
+            [
+              4.645,
+              6.85
+            ],
+            [
+              8.597,
+              6.85
+            ],
+            [
+              8.597,
+              8.411
+            ],
+            [
+              2.79,
+              8.411
+            ]
+          ],
+          "etiqueta": [
+            6.0,
+            7.4
+          ]
+        },
+        {
+          "nombre": "Baño 1",
+          "tipo": "bano",
+          "poligono": [
+            [
+              5.815,
+              3.218
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              5.815,
+              5.444
+            ]
+          ]
+        },
+        {
+          "nombre": "Baño 2",
+          "tipo": "bano",
+          "poligono": [
+            [
+              5.815,
+              5.444
+            ],
+            [
+              8.597,
+              5.444
+            ],
+            [
+              8.597,
+              6.85
+            ],
+            [
+              5.815,
+              6.85
+            ]
+          ],
+          "etiqueta": [
+            6.6,
+            6.45
+          ]
+        },
+        {
+          "nombre": "Pasillo",
+          "tipo": "hall",
+          "poligono": [
+            [
+              4.185,
+              2.718
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              5.815,
+              6.85
+            ],
+            [
+              4.645,
+              6.85
+            ],
+            [
+              4.645,
+              3.71
+            ],
+            [
+              4.185,
+              3.71
+            ]
+          ],
+          "etiqueta": [
+            5.23,
+            4.0
+          ]
+        },
+        {
+          "nombre": "Cocina-salón-comedor",
+          "tipo": "csc",
+          "poligono": [
+            [
+              0.468,
+              0
+            ],
+            [
+              4.185,
+              0
+            ],
+            [
+              4.185,
+              3.71
+            ],
+            [
+              2.79,
+              3.71
+            ],
+            [
+              2.79,
+              7.669
+            ],
+            [
+              0,
+              7.669
+            ],
+            [
+              0,
+              4.952
+            ],
+            [
+              0.468,
+              4.952
+            ]
+          ],
+          "etiqueta": [
+            2.2,
+            1.4
+          ],
+          "zona_cocina": [
+            [
+              0,
+              4.952
+            ],
+            [
+              2.79,
+              4.952
+            ],
+            [
+              2.79,
+              7.669
+            ],
+            [
+              0,
+              7.669
+            ]
+          ]
+        }
+      ],
+      "huecos": [
+        {
+          "tipo": "balconera",
+          "a": [
+            1.02,
+            0
+          ],
+          "b": [
+            2.91,
+            0
+          ]
+        },
+        {
+          "tipo": "entrada",
+          "a": [
+            0.468,
+            4.73
+          ],
+          "b": [
+            0.468,
+            3.9
+          ],
+          "hacia": [
+            0.9,
+            4.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.379,
+            2.718
+          ],
+          "b": [
+            5.315,
+            2.718
+          ],
+          "hacia": [
+            4.8,
+            2.3
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            5.815,
+            4.573
+          ],
+          "b": [
+            5.815,
+            3.815
+          ],
+          "hacia": [
+            6.2,
+            4.2
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            4.645,
+            4.298
+          ],
+          "b": [
+            4.645,
+            5.089
+          ],
+          "hacia": [
+            5.0,
+            4.7
+          ]
+        },
+        {
+          "tipo": "paso",
+          "a": [
+            4.185,
+            2.718
+          ],
+          "b": [
+            4.185,
+            3.71
+          ]
+        },
+        {
+          "tipo": "puerta",
+          "a": [
+            5.815,
+            5.8
+          ],
+          "b": [
+            5.815,
+            6.5
+          ],
+          "hacia": [
+            6.2,
+            6.15
+          ]
+        }
+      ],
+      "muebles": [
+        {
+          "nombre": "Cama 150",
+          "x": 6.6,
+          "y": 0.3,
+          "w": 1.9,
+          "h": 1.5
+        },
+        {
+          "nombre": "Escritorio",
+          "x": 4.4,
+          "y": 0.09,
+          "w": 1.2,
+          "h": 0.6,
+          "tipo": "escritorio"
+        },
+        {
+          "nombre": "Armario",
+          "x": 6.1,
+          "y": 2.53,
+          "w": 2.0,
+          "h": 0.6
+        },
+        {
+          "nombre": "Bañera",
+          "x": 7.76,
+          "y": 3.4,
+          "w": 0.75,
+          "h": 1.7
+        },
+        {
+          "nombre": "WC",
+          "x": 6.9,
+          "y": 3.307,
+          "w": 0.45,
+          "h": 0.65
+        },
+        {
+          "nombre": "Lavabo",
+          "x": 6.8,
+          "y": 4.85,
+          "w": 0.6,
+          "h": 0.505
+        },
+        {
+          "nombre": "Nevera",
+          "x": 0.089,
+          "y": 5.041,
+          "w": 0.6,
+          "h": 0.65,
+          "tipo": "nevera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 0.089,
+          "y": 5.691,
+          "w": 0.6,
+          "h": 1.289,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 0.089,
+          "y": 6.98,
+          "w": 2.612,
+          "h": 0.6,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Fregadero",
+          "x": 1.0,
+          "y": 7.05,
+          "w": 0.6,
+          "h": 0.45,
+          "forma": "fregadero"
+        },
+        {
+          "nombre": "Sofá",
+          "x": 3.15,
+          "y": 0.5,
+          "w": 0.9,
+          "h": 2.0
+        },
+        {
+          "nombre": "Mesa",
+          "x": 0.9,
+          "y": 2.2,
+          "w": 1.4,
+          "h": 0.8
+        },
+        {
+          "nombre": "Cama 135",
+          "x": 6.5,
+          "y": 6.95,
+          "w": 1.9,
+          "h": 1.35
+        },
+        {
+          "nombre": "Escritorio",
+          "x": 2.88,
+          "y": 3.95,
+          "w": 0.6,
+          "h": 1.2,
+          "tipo": "escritorio"
+        },
+        {
+          "nombre": "Armario",
+          "x": 2.88,
+          "y": 6.3,
+          "w": 0.6,
+          "h": 1.8
+        },
+        {
+          "nombre": "Lavabo",
+          "x": 6.6,
+          "y": 5.534,
+          "w": 0.6,
+          "h": 0.45
+        },
+        {
+          "nombre": "WC",
+          "x": 7.25,
+          "y": 5.534,
+          "w": 0.45,
+          "h": 0.65
+        },
+        {
+          "nombre": "Ducha",
+          "x": 7.707,
+          "y": 5.534,
+          "w": 0.8,
+          "h": 1.226
+        }
+      ]
+    }
+  ]
+}

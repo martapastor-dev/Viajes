@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planos</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<header><h1>Planos de pisos</h1></header>
+<main>
+  <div id="lista" class="lista"></div>
+  <p class="pequeno">Cada plano se redibuja a escala desde la foto del anuncio y se comparan distribuciones con los requisitos de <a href="requisitos.json">requisitos.json</a>.</p>
+</main>
+<script>
+const euros = n => n.toLocaleString('es-ES') + ' €';
+fetch('planos.json').then(r => r.json()).then(ids => Promise.all(ids.map(id =>
+  fetch(id + '/plano.json').then(r => r.json())))).then(planos => {
+  document.getElementById('lista').innerHTML = planos.map(p => `
+    <div class="tarjeta">
+      <a class="plano" href="visor.html?id=${p.id}">
+        <img src="${p.id}/${p.original.archivo}" alt="">
+        <div>
+          <strong>${p.titulo}</strong><br>
+          ${euros(p.anuncio.precio)} · ${p.anuncio.superficie} m² · ${p.anuncio.barrio}<br>
+          <span class="pequeno">${p.variantes.length - 1} propuestas de distribución</span>
+        </div>
+      </a>
+      <p class="pequeno"><a href="${p.anuncio.url}" target="_blank" rel="noopener">Ver anuncio en ${p.anuncio.portal}</a></p>
+    </div>`).join('');
+});
+</script>
+</body>
+</html>
