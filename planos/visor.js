@@ -197,6 +197,21 @@ function conflictos(v) {
   return r;
 }
 
+function puertasBanoACocina(v) {
+  const cocinas = v.estancias.flatMap(e => e.tipo === 'cocina' ? [e.poligono] : e.zona_cocina ? [e.zona_cocina] : []);
+  const r = [];
+  for (const h of v.huecos.filter(h => h.tipo === 'puerta' || h.tipo === 'paso')) {
+    const [ax, ay] = h.a, [bx, by] = h.b, L = Math.hypot(bx - ax, by - ay);
+    const mx = (ax + bx) / 2, my = (ay + by) / 2, nx = -(by - ay) / L * 0.3, ny = (bx - ax) / L * 0.3;
+    const lados = [[mx + nx, my + ny], [mx - nx, my - ny]];
+    for (const [i, q] of lados.entries()) {
+      const bano = v.estancias.find(e => e.tipo === 'bano' && dentro(q, e.poligono));
+      if (bano && cocinas.some(c => dentro(lados[1 - i], c))) r.push(bano.nombre);
+    }
+  }
+  return r;
+}
+
 function evaluar(v) {
   const area = e => areaUtil(e.poligono);
   const dorms = v.estancias.filter(e => e.tipo === 'dormitorio').map(area).sort((a, b) => b - a);
@@ -233,6 +248,10 @@ function evaluar(v) {
   fila(choques.length === 0, 'Muebles sin tapar puertas ni solaparse', choques.length ? choques.join('; ') : 'todo libre');
   fila(true, 'Terraza fuera de la parte editable', 'se mantiene igual');
   fila(fuera.length === 0, 'Cuartos húmedos en la zona de bajantes', fuera.length ? 'fuera: ' + fuera.join(', ') : 'todos dentro');
+  if (req.bano_sin_puerta_a_cocina) {
+    const malas = puertasBanoACocina(v);
+    fila(malas.length === 0, 'Ninguna puerta de baño da a la cocina', malas.length ? 'da a la cocina: ' + malas.join(', ') : 'ninguna');
+  }
   fila(banos[1] >= req.bano_segundo_min, `Segundo baño de ${fmt(req.bano_segundo_min)} m² (opcional)`, banos[1] ? fmt(banos[1]) + ' m²' : 'no hay', true);
   return r;
 }
@@ -269,7 +288,7 @@ function mostrarAnuncio(a) {
     <a href="https://www.google.com/maps?q=${a.coordenadas.join(',')}" target="_blank" rel="noopener">Mapa</a></p>`;
 }
 
-Promise.all([fetch(idPlano + '/plano.json').then(r => r.json()), fetch('requisitos.json').then(r => r.json())]).then(([p, r]) => {
+Promise.all([fetch(idPlano + '/plano.json', { cache: 'no-cache' }).then(r => r.json()), fetch('requisitos.json', { cache: 'no-cache' }).then(r => r.json())]).then(([p, r]) => {
   plano = p; req = { ...r, ...(p.requisitos || {}) };
   plano.original.archivo = idPlano + '/' + plano.original.archivo;
   document.title = plano.titulo;

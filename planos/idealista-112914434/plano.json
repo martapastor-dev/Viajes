@@ -852,12 +852,14 @@
     },
     {
       "id": "B",
-      "nombre": "B · 2 dormitorios + 2 baños",
-      "descripcion": "El baño 2 se saca de la parte izquierda de la cocina, que queda como cocina lineal abierta al antiguo hall. La Hab. 3 se abre al salón y hace de comedor, de modo que salón, hall, cocina y comedor forman la cocina-salón-comedor.",
+      "nombre": "B · 2 dormitorios + 2 baños pegados",
+      "descripcion": "Parte de la A. Los dos baños van juntos donde hoy está la cocina y la cocina pasa a la zona del baño actual, abierta al pasillo. Salón, hall, Hab. 3 (comedor), pasillo y cocina forman la cocina-salón-comedor. Los baños se abren desde el antiguo hall, no desde la cocina.",
       "notas": [
-        "Cocina lineal con un pasillo de unos 0,8 m entre la encimera y el tabique del baño 2: es funcional pero estrecha.",
+        "Es la única forma de tener los dos baños pegados dentro de las bajantes: el baño actual (5,3 m²) no da para 3,5 + 2,5 m².",
+        "Se cambian de sitio la cocina y el baño: hay que llevar agua y desagües nuevos a las dos zonas de bajantes.",
+        "La cocina queda al fondo del pasillo, entre los dos dormitorios, y no junto al salón.",
         "El baño 2 mide 1,0 m de ancho: ducha, lavabo y WC en línea.",
-        "Comprobar que los tabiques del hall y el de Hab. 3–salón no son de carga."
+        "Comprobar que los tabiques que se tiran (hall, Hab. 3, pasillo–baño) no son de carga."
       ],
       "estancias": [
         {
@@ -917,21 +919,25 @@
           "tipo": "bano",
           "poligono": [
             [
-              5.815,
-              3.218
+              0,
+              4.952
             ],
             [
-              8.597,
-              3.218
+              1.59,
+              4.952
             ],
             [
-              8.597,
-              5.444
+              1.59,
+              7.669
             ],
             [
-              5.815,
-              5.444
+              0,
+              7.669
             ]
+          ],
+          "etiqueta": [
+            1.05,
+            6.1
           ]
         },
         {
@@ -939,59 +945,25 @@
           "tipo": "bano",
           "poligono": [
             [
-              0,
+              1.59,
               4.952
             ],
             [
-              1.22,
+              2.79,
               4.952
             ],
             [
-              1.22,
+              2.79,
               7.669
             ],
             [
-              0,
+              1.59,
               7.669
             ]
           ],
           "etiqueta": [
-            0.61,
-            6.0
-          ]
-        },
-        {
-          "nombre": "Pasillo",
-          "tipo": "hall",
-          "poligono": [
-            [
-              4.185,
-              2.718
-            ],
-            [
-              5.815,
-              2.718
-            ],
-            [
-              5.815,
-              5.444
-            ],
-            [
-              4.645,
-              5.444
-            ],
-            [
-              4.645,
-              3.71
-            ],
-            [
-              4.185,
-              3.71
-            ]
-          ],
-          "etiqueta": [
-            5.23,
-            4.0
+            2.19,
+            5.75
           ]
         },
         {
@@ -1008,11 +980,27 @@
             ],
             [
               4.185,
-              3.71
+              2.718
+            ],
+            [
+              5.815,
+              2.718
+            ],
+            [
+              5.815,
+              3.218
+            ],
+            [
+              8.597,
+              3.218
+            ],
+            [
+              8.597,
+              5.444
             ],
             [
               4.645,
-              3.71
+              5.444
             ],
             [
               4.645,
@@ -1024,18 +1012,6 @@
             ],
             [
               2.79,
-              3.71
-            ],
-            [
-              2.79,
-              7.669
-            ],
-            [
-              1.22,
-              7.669
-            ],
-            [
-              1.22,
               4.952
             ],
             [
@@ -1049,20 +1025,20 @@
           ],
           "zona_cocina": [
             [
-              1.22,
-              4.952
+              5.815,
+              3.218
             ],
             [
-              2.79,
-              4.952
+              8.597,
+              3.218
             ],
             [
-              2.79,
-              7.669
+              8.597,
+              5.444
             ],
             [
-              1.22,
-              7.669
+              5.815,
+              5.444
             ]
           ]
         }
@@ -1112,21 +1088,6 @@
         {
           "tipo": "puerta",
           "a": [
-            5.815,
-            4.573
-          ],
-          "b": [
-            5.815,
-            3.815
-          ],
-          "hacia": [
-            6.2,
-            4.2
-          ]
-        },
-        {
-          "tipo": "puerta",
-          "a": [
             4.734,
             5.444
           ],
@@ -1142,42 +1103,42 @@
         {
           "tipo": "puerta",
           "a": [
-            4.645,
-            4.298
+            0.6,
+            4.952
           ],
           "b": [
-            4.645,
-            5.089
+            1.3,
+            4.952
           ],
           "hacia": [
-            5.0,
-            4.7
-          ]
-        },
-        {
-          "tipo": "paso",
-          "a": [
-            4.185,
-            2.718
-          ],
-          "b": [
-            4.185,
-            3.71
+            0.95,
+            5.4
           ]
         },
         {
           "tipo": "puerta",
           "a": [
-            1.22,
-            5.1
+            1.8,
+            4.952
           ],
           "b": [
-            1.22,
-            5.75
+            2.5,
+            4.952
           ],
           "hacia": [
-            0.8,
+            2.15,
             5.4
+          ]
+        },
+        {
+          "tipo": "paso",
+          "a": [
+            5.815,
+            3.218
+          ],
+          "b": [
+            5.815,
+            5.444
           ]
         }
       ],
@@ -1227,70 +1188,78 @@
           "h": 1.8
         },
         {
-          "nombre": "Bañera",
-          "x": 7.76,
-          "y": 3.4,
-          "w": 0.75,
-          "h": 1.7
+          "nombre": "Lavabo",
+          "x": 0.09,
+          "y": 5.75,
+          "w": 0.5,
+          "h": 0.6
         },
         {
           "nombre": "WC",
-          "x": 6.9,
-          "y": 3.307,
+          "x": 0.09,
+          "y": 6.4,
+          "w": 0.65,
+          "h": 0.45
+        },
+        {
+          "nombre": "Ducha",
+          "x": 0.09,
+          "y": 6.879,
+          "w": 1.41,
+          "h": 0.7
+        },
+        {
+          "nombre": "Lavabo",
+          "x": 2.25,
+          "y": 6.25,
+          "w": 0.45,
+          "h": 0.5
+        },
+        {
+          "nombre": "WC",
+          "x": 1.68,
+          "y": 6.05,
           "w": 0.45,
           "h": 0.65
         },
         {
-          "nombre": "Lavabo",
-          "x": 6.8,
-          "y": 4.85,
-          "w": 0.6,
-          "h": 0.505
-        },
-        {
-          "nombre": "Encimera",
-          "x": 2.1,
-          "y": 5.041,
-          "w": 0.6,
-          "h": 1.889,
-          "tipo": "encimera"
+          "nombre": "Ducha",
+          "x": 1.68,
+          "y": 6.779,
+          "w": 1.02,
+          "h": 0.8
         },
         {
           "nombre": "Nevera",
-          "x": 2.1,
-          "y": 6.93,
+          "x": 5.905,
+          "y": 3.308,
           "w": 0.6,
           "h": 0.65,
           "tipo": "nevera"
         },
         {
+          "nombre": "Encimera",
+          "x": 6.505,
+          "y": 3.308,
+          "w": 1.402,
+          "h": 0.6,
+          "tipo": "encimera"
+        },
+        {
+          "nombre": "Encimera",
+          "x": 7.907,
+          "y": 3.308,
+          "w": 0.6,
+          "h": 2.046,
+          "tipo": "encimera"
+        },
+        {
           "nombre": "Fregadero",
-          "x": 2.17,
-          "y": 5.6,
+          "x": 7.98,
+          "y": 4.3,
           "w": 0.45,
           "h": 0.6,
           "forma": "fregadero"
-        },
-        {
-          "nombre": "Ducha",
-          "x": 0.089,
-          "y": 6.78,
-          "w": 1.042,
-          "h": 0.8
-        },
-        {
-          "nombre": "WC",
-          "x": 0.089,
-          "y": 6.0,
-          "w": 0.65,
-          "h": 0.45
-        },
-        {
-          "nombre": "Lavabo",
-          "x": 0.089,
-          "y": 5.15,
-          "w": 0.45,
-          "h": 0.5
         },
         {
           "nombre": "Sofá",

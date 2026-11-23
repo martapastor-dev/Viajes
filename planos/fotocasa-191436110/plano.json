@@ -22,7 +22,8 @@
     "notas": "Terraza abierta. Agua caliente con gas natural. Calefacción no indicada. Metro Aviación Española (L10) a 200 m y Cercanías Las Águilas (C-5)."
   },
   "requisitos": {
-    "dormitorio_grande_min": 9.9
+    "dormitorio_grande_min": 9.9,
+    "bano_sin_puerta_a_cocina": false
   },
   "original": {
     "archivo": "original.png",
