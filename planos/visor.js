@@ -33,6 +33,8 @@ function enBorde(pt, p, eps) {
   }
   return false;
 }
+const zonasHumedas = () => Array.isArray(plano.zona_humeda[0][0]) ? plano.zona_humeda : [plano.zona_humeda];
+
 function dentro(pt, p) {
   if (enBorde(pt, p, 0.03)) return true;
   let c = false;
@@ -62,7 +64,8 @@ function dibujar(v) {
   const gFondo = el('g', {}, svg);
   for (const f of plano.fijos) el('polygon', { points: pts(f.poligono), fill: COLORES[f.tipo], stroke: '#666', 'stroke-width': 0.05, 'stroke-dasharray': '0.12 0.06' }, gFondo);
   for (const e of v.estancias) el('polygon', { points: pts(e.poligono), fill: COLORES[e.tipo] || '#eee', 'fill-opacity': 0.9 }, gFondo);
-  el('polygon', { points: pts(plano.zona_humeda), fill: '#3a86ff', 'fill-opacity': 0.12, stroke: '#3a86ff', 'stroke-width': 0.04, 'stroke-dasharray': '0.15 0.08', id: 'capaHumeda' }, svg);
+  const gHumeda = el('g', { id: 'capaHumeda' }, svg);
+  for (const z of zonasHumedas()) el('polygon', { points: pts(z), fill: '#3a86ff', 'fill-opacity': 0.12, stroke: '#3a86ff', 'stroke-width': 0.04, 'stroke-dasharray': '0.15 0.08' }, gHumeda);
   const gMuebles = el('g', { id: 'capaMuebles' }, svg);
   const gFoto = el('g', { id: 'capaOriginal', 'pointer-events': 'none' });
   for (const m of v.muebles || []) {
@@ -204,7 +207,7 @@ function evaluar(v) {
     if (e.tipo === 'bano' || e.tipo === 'cocina') humedas.push([e.nombre, e.poligono]);
     if (e.zona_cocina) humedas.push(['Cocina', e.zona_cocina]);
   }
-  const fuera = humedas.filter(([, p]) => !p.every(q => dentro(q, plano.zona_humeda))).map(([n]) => n);
+  const fuera = humedas.filter(([, p]) => !zonasHumedas().some(z => p.every(q => dentro(q, z)))).map(([n]) => n);
   const r = [];
   const fila = (ok, texto, detalle, opcional) => r.push({ ok, texto, detalle, opcional });
   fila(dorms[0] >= req.dormitorio_grande_min, `Dormitorio de mínimo ${fmt(req.dormitorio_grande_min)} m²`, dorms[0] ? fmt(dorms[0]) + ' m²' : 'no hay');
