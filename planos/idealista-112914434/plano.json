@@ -853,7 +853,7 @@
     {
       "id": "B",
       "nombre": "B · 2 dormitorios + 2 baños pegados",
-      "descripcion": "Parte de la A. Los dos baños van juntos donde hoy está la cocina y la cocina pasa a la zona del baño actual, abierta al pasillo. Salón, hall, Hab. 3 (comedor), pasillo y cocina forman la cocina-salón-comedor. El baño 1 se abre desde el antiguo hall y el baño 2 desde el comedor; ninguno da a la cocina.",
+      "descripcion": "Parte de la A. Los dos baños van juntos donde hoy está la cocina y la cocina pasa a la zona del baño actual, abierta al pasillo. Salón, hall, Hab. 3 (zona abierta), pasillo y cocina forman la cocina-salón-comedor. El baño 1 se abre desde el antiguo hall y el baño 2 desde el comedor; ninguno da a la cocina.",
       "notas": [
         "Es la única forma de tener los dos baños pegados dentro de las bajantes: el baño actual (5,3 m²) no da para 3,5 + 2,5 m².",
         "Se cambian de sitio la cocina y el baño: hay que llevar agua y desagües nuevos a las dos zonas de bajantes.",
@@ -1249,10 +1249,10 @@
         },
         {
           "nombre": "Mesa",
-          "x": 3.7,
-          "y": 6.0,
-          "w": 0.8,
-          "h": 1.4
+          "x": 0.9,
+          "y": 2.2,
+          "w": 1.4,
+          "h": 0.8
         },
         {
           "nombre": "Ducha",
