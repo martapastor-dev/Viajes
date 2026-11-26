@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casas Madrid — parámetros</title>
+<style>
+:root{--bg:#FCFCFC;--surface:#FFFFFF;--text:#191919;--muted:rgba(25,25,25,.56);
+--border:rgba(0,0,0,.10);--accent:#317CFF;--accent-fg:#fff;--radius:6px;
+--font:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.45}
+header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;z-index:9}
+h1{font-size:17px;font-weight:600}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+main{padding:12px 16px;max-width:880px;margin:0 auto}
+.group{margin:18px 0 8px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);padding-bottom:4px}
+.f{display:flex;align-items:center;gap:10px;margin:7px 0;flex-wrap:wrap}
+.f label{flex:1;min-width:200px}
+.f input[type=number],.f input[type=text]{font:inherit;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);width:110px;text-align:right}
+.f input[type=text]{width:100%;text-align:left}
+.f textarea{font:inherit;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);width:100%;min-height:56px}
+.unit{color:var(--muted);font-size:12px;min-width:90px}
+.hint{color:var(--muted);font-size:12px;margin:2px 0 0}
+.bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:15px;padding:10px 22px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+#runbox{display:none;padding:14px 16px}
+#runlog{font:12px/1.5 ui-monospace,Menlo,monospace;background:#f4f4f4;border:1px solid var(--border);border-radius:var(--radius);padding:10px;max-height:200px;overflow:auto;white-space:pre-wrap}
+.rule{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin:6px 0}
+.rtag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:#eef3ff;color:var(--accent);white-space:nowrap}
+.rtxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdel{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:12px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6;display:none}
+#reglas.edit .rdel{display:inline}
+.fdel{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:12px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6;display:none}
+body.edit .fdel{display:inline}
+.f.off{display:none}
+#deleted{display:none;margin-top:8px}
+body.edit #deleted.show{display:block}
+#deleted .f{opacity:.55}
+.rrestore{border:1px solid var(--border);background:var(--surface);border-radius:99px;font-size:12px;padding:0 8px;cursor:pointer;color:var(--muted);line-height:1.6}
+#regform .f select,#regform .f input{font:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+#regform .f input[type=text]{flex:1;min-width:120px;text-align:left;width:auto}
+#regform .f input[type=number]{width:64px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+<h1>Parámetros de búsqueda</h1>
+<div class="sub">Ajusta los criterios; se guardan al buscar. Coste total = anuncio × negociación × (1+comisión) + ITP + extra sin calefacción.</div>
+</header>
+<main>
+<div id="form"></div>
+<div class="group">Reglas personalizadas <button class="btn" id="editreg" style="padding:2px 12px;font-size:12px">Editar</button></div>
+<div id="deleted"></div>
+<div id="reglas"></div>
+<div id="regform" style="display:none">
+  <div class="f">
+    <select id="r_tipo"><option value="descartar">Descartar el anuncio</option><option value="puntos">Restar puntos</option></select>
+    <select id="r_campo"><option value="anuncio">si el anuncio contiene</option><option value="barrio">si el barrio contiene</option></select>
+    <input type="text" id="r_texto" placeholder="texto a buscar…">
+    <input type="number" id="r_puntos" value="5" min="1" max="100" title="puntos">
+    <button class="btn" id="r_add">Añadir regla</button>
+  </div>
+  <div class="hint">El texto se busca en la descripción y el título (o en el nombre del barrio), sin distinguir mayúsculas ni tildes.</div>
+</div>
+<div id="runbox">
+  <div class="group">Búsqueda en marcha <span class="spin"></span></div>
+  <div class="hint">Scrapeando Fotocasa y Pisos.com y aplicando los filtros (1–3 min).</div>
+  <div id="runlog"></div>
+</div>
+</main>
+<div class="bar">
+<a class="btn" href="/index.html">Abrir la búsqueda</a>
+<button class="btn primary" id="run">Realizar búsqueda</button>
+</div>
+<script>
+const GROUPS=[
+ ['Precio',[
+  ['precio_max','Tope del coste total','€'],
+  ['nego','Factor negociación sobre anuncio','×0,9 = −10%','num',0.01],
+  ['itp','ITP','%','pct'],
+  ['com_redpiso','Comisión Redpiso','%','pct'],
+  ['com_agencia','Comisión otras inmobiliarias','%','pct'],
+  ['extra_sin_cal','Coste extra si no hay calefacción','€'],
+  ['eurm2_max','€/m² máximo (sin calefacción ni ITP)','€/m²'],
+  ['m2_min','Superficie mínima','m²'],
+  ['util_min','Superficie útil mínima (si se indica)','m²']]],
+ ['Filtros',[
+  ['min_fotos','Mínimo de fotos en el anuncio',''],
+  ['ascensor_desde','Ascensor obligatorio desde planta','ª'],
+  ['no_bajos','Descartar bajos y semisótanos','','bool'],
+  ['no_ocupadas','Descartar ocupadas, alquiladas, nuda propiedad, subastas','','bool'],
+  ['no_interiores','Descartar viviendas interiores','','bool'],
+  ['orient_reject','Orientaciones rechazadas (separadas por coma)','','text'],
+  ['barrios_excl','Barrios / distritos excluidos (separados por coma)','','area']]],
+ ['Zona del mapa (recalcula la isócrona, ~1 min más)',[
+  ['walk_max','Máximo andando a la estación','min'],
+  ['tp_max','Máximo en TP a Alonso Martínez','min'],
+  ['car_max','Máximo en coche a Cd. Financiera (hora punta)','min']]],
+ ['Puntuación (cada vivienda parte de 100)',[
+  ['sc_oeste','Puntos si orientación oeste','−'],
+  ['sc_sin_cal','Puntos si no tiene calefacción','−'],
+  ['sc_sin_aire','Puntos si no tiene aire acondicionado','−'],
+  ['car_u1','Puntos si coche a Boadilla ≥ minutos:','min','num',1,'sc_car_25','−pts'],
+  ['car_u2','Puntos si coche a Boadilla > minutos:','min','num',1,'sc_car_20','−pts'],
+  ['tp_u','Puntos si TP a Alonso Martínez > minutos:','min','num',1,'sc_tp_35','−pts'],
+  ['m2_u1','Puntos si superficie < m²:','m²','num',1,'sc_m2_75','−pts'],
+  ['m2_u2','Puntos si superficie < m²:','m²','num',1,'sc_m2_80','−pts'],
+  ['sc_sin_asc','Puntos si no tiene ascensor','−']]]
+];
+let P={}, reglas=[];
+const form=document.getElementById('form');
+const escR=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderReglas(){
+  const box=document.getElementById('reglas');
+  box.innerHTML=reglas.length?reglas.map((r,i)=>{
+    const t=r.tipo==='descartar'?'Descartar':'−'+(parseInt(r.puntos)||0)+' pts';
+    const c=r.campo==='barrio'?'barrio':'anuncio';
+    return `<div class="rule"><span class="rtag">${t} · ${c}</span><span class="rtxt">${escR(r.texto)}</span><button class="rdel" data-i="${i}">🗑</button></div>`;
+  }).join(''):'<div class="hint">Sin reglas personalizadas.</div>';
+}
+let OFF=new Set();
+const KL={};
+GROUPS.forEach(([g,fields])=>fields.forEach(f=>{KL[f[0]]=f[1]}));
+function applyOff(){
+  document.querySelectorAll('#form .f[data-k]').forEach(d=>d.classList.toggle('off', OFF.has(d.dataset.k)));
+  const dl=document.getElementById('deleted');
+  dl.innerHTML=OFF.size?'<div class="gh">Reglas eliminadas</div>'+[...OFF].map(k=>`<div class="f"><label>${KL[k]||k}</label><button type="button" class="rrestore" data-k="${k}">↩ restaurar</button></div>`).join(''):'';
+  dl.classList.toggle('show', OFF.size>0);
+}
+document.getElementById('editreg').addEventListener('click',()=>{
+  const f=document.getElementById('regform');
+  f.style.display=f.style.display==='none'?'block':'none';
+  document.getElementById('reglas').classList.toggle('edit', f.style.display!=='none');
+  document.body.classList.toggle('edit', f.style.display!=='none');
+});
+document.body.addEventListener('click',e=>{
+  const b=e.target.closest('.fdel,.rrestore'); if(!b)return;
+  const k=b.dataset.k;
+  OFF.has(k)?OFF.delete(k):OFF.add(k);
+  applyOff(); persist();
+});
+document.getElementById('reglas').addEventListener('click',e=>{
+  const b=e.target.closest('.rdel'); if(!b)return;
+  reglas.splice(+b.dataset.i,1); renderReglas(); persist();
+});
+document.getElementById('r_add').addEventListener('click',()=>{
+  const tx=document.getElementById('r_texto').value.trim(); if(!tx)return;
+  const r={tipo:document.getElementById('r_tipo').value,campo:document.getElementById('r_campo').value,texto:tx};
+  if(r.tipo==='puntos') r.puntos=Math.max(1,parseInt(document.getElementById('r_puntos').value)||0);
+  reglas.push(r); document.getElementById('r_texto').value='';
+  renderReglas(); persist();
+});
+function build(){
+  let h='';
+  for(const [g,fields] of GROUPS){
+    h+=`<div class="group">${g}</div>`;
+    for(const f of fields){
+      const [k,label,unit,kind,step,k2,u2]=f;
+      const del=`<button type="button" class="fdel" data-k="${k}" title="desactivar regla">🗑</button>`;
+      if(kind==='bool'){
+        h+=`<div class="f" data-k="${k}"><label>${label}</label><input type="checkbox" id="p_${k}">${del}</div>`;
+      }else if(kind==='text'){
+        h+=`<div class="f" data-k="${k}"><label style="width:100%">${label}</label><input type="text" id="p_${k}">${del}</div>`;
+      }else if(kind==='area'){
+        h+=`<div class="f" data-k="${k}"><label style="width:100%">${label}</label><textarea id="p_${k}"></textarea>${del}</div>`;
+      }else if(k2){
+        h+=`<div class="f" data-k="${k}"><label>${label}</label><input type="number" id="p_${k}" step="${step}"><span class="unit">${unit}</span><input type="number" id="p_${k2}" step="1"><span class="unit">${u2}</span>${del}</div>`;
+      }else{
+        h+=`<div class="f" data-k="${k}"><label>${label}</label><input type="number" id="p_${k}" step="${step||1}"><span class="unit">${unit}</span>${del}</div>`;
+      }
+    }
+  }
+  form.innerHTML=h;
+}
+function fill(p){
+  for(const [g,fields] of GROUPS) for(const f of fields){
+    const k=f[0],kind=f[3];
+    const el=document.getElementById('p_'+k); if(!el)continue;
+    if(kind==='bool') el.checked=!!p[k];
+    else if(kind==='pct') el.value=(p[k]*100).toFixed(2);
+    else el.value=p[k];
+    if(f[5]) document.getElementById('p_'+f[5]).value=p[f[5]];
+  }
+}
+function collect(){
+  const p={};
+  for(const [g,fields] of GROUPS) for(const f of fields){
+    const k=f[0],kind=f[3];
+    const el=document.getElementById('p_'+k); if(!el)continue;
+    if(kind==='bool') p[k]=el.checked;
+    else if(kind==='pct') p[k]=parseFloat(String(el.value).replace(',','.'))/100;
+    else if(kind==='text'||kind==='area') p[k]=el.value;
+    else p[k]=parseFloat(String(el.value).replace(',','.'));
+    if(f[5]) p[f[5]]=parseFloat(String(document.getElementById('p_'+f[5]).value).replace(',','.'));
+  }
+  p.reglas=reglas;
+  p.reglas_off=[...OFF];
+  return p;
+}
+async function api(path,method,body){
+  const r=await fetch(path,{method:method||'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  return r.json();
+}
+function persist(){try{localStorage.setItem('hestia_params_draft',JSON.stringify(collect()));}catch(e){}}
+(async()=>{
+  build();
+  let srv={},draft={};
+  try{srv=(await api('/api/config')).params||{};}catch(e){}
+  try{draft=JSON.parse(localStorage.getItem('hestia_params_draft')||'{}');}catch(e){}
+  P=Object.assign({},srv,draft);
+  reglas=Array.isArray(P.reglas)?P.reglas:[];
+  OFF=new Set(Array.isArray(P.reglas_off)?P.reglas_off:[]);
+  renderReglas();
+  fill(P);
+  applyOff();
+  form.addEventListener('input',persist);
+})();
+document.getElementById('run').addEventListener('click',async()=>{
+  const b=document.getElementById('run'); b.disabled=true;
+  const box=document.getElementById('runbox'); box.style.display='block';
+  const params=collect();
+  try{localStorage.setItem('hestia_params_draft',JSON.stringify(params));}catch(e){}
+  try{
+    await api('/api/config','POST',{params});
+    const r=await api('/api/run','POST',{params});
+    if(r.error){alert(r.error);b.disabled=false;return;}
+    const iv=setInterval(async()=>{
+      const s=await api('/api/status');
+      document.getElementById('runlog').textContent=(s.log||[]).slice(-30).join('\n');
+      document.getElementById('runlog').scrollTop=1e6;
+      if(s.state==='done'){clearInterval(iv);location.href='/index.html';}
+      else if(s.state==='error'){clearInterval(iv);alert('La búsqueda ha fallado: '+(s.error||''));b.disabled=false;}
+    },3000);
+  }catch(e){alert('Error lanzando la búsqueda: '+e);b.disabled=false;}
+});
+</script>
+</body>
+</html>
