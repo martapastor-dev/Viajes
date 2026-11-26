@@ -126,3 +126,36 @@ def regla_pen_y_drop(rules, txt_n, hood_n):
                 return pen, True
             pen += pts
     return pen, False
+
+
+# Ámbitos que consultan los scrapers (slug por portal). Solo decide qué se descarga:
+# cada anuncio sigue teniendo que caer en coche25 ∩ zona_final para entrar.
+MUNICIPIOS = [
+    {'name': 'Madrid', 'fotocasa': 'madrid-capital', 'pisos': 'madrid_capital_zona_urbana', 'habitaclia': 'madrid-capital', 'tecnocasa': 'madrid/madrid'},
+    {'name': 'Pozuelo de Alarcón', 'fotocasa': 'pozuelo-de-alarcon', 'pisos': 'pozuelo_de_alarcon', 'habitaclia': 'pozuelo-de-alarcon', 'tecnocasa': 'madrid/pozuelo-de-alarcon'},
+    {'name': 'Majadahonda', 'fotocasa': 'majadahonda', 'pisos': 'majadahonda', 'habitaclia': 'majadahonda', 'tecnocasa': 'madrid/majadahonda'},
+    {'name': 'Las Rozas de Madrid', 'fotocasa': 'las-rozas-de-madrid', 'pisos': 'las_rozas_de_madrid', 'habitaclia': 'las-rozas-de-madrid', 'tecnocasa': 'madrid/las-rozas-de-madrid'},
+    {'name': 'Boadilla del Monte', 'fotocasa': 'boadilla-del-monte', 'pisos': 'boadilla_del_monte', 'habitaclia': 'boadilla-del-monte', 'tecnocasa': 'madrid/boadilla-del-monte'},
+    {'name': 'Alcorcón', 'fotocasa': 'alcorcon', 'pisos': 'alcorcon', 'habitaclia': 'alcorcon', 'tecnocasa': 'madrid/alcorcon'},
+    {'name': 'Móstoles', 'fotocasa': 'mostoles', 'pisos': 'mostoles', 'habitaclia': 'mostoles', 'tecnocasa': 'madrid/mostoles'},
+]
+
+def pages_until_repeat(fetch, maxpages, workers):
+    """fetch(n) -> (items, claves_de_la_pagina) o None si falla. Pide páginas por lotes y corta
+    cuando una página no aporta claves nuevas: pisos.com, Habitaclia y Tecnocasa repiten la
+    última página o vuelven a la 1 al pasarse del final. Devuelve [(n, items|None)]."""
+    from concurrent.futures import ThreadPoolExecutor
+    seen, res = set(), []
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for start in range(1, maxpages + 1, workers):
+            ns = list(range(start, min(start + workers, maxpages + 1)))
+            stop = False
+            for n, r in zip(ns, ex.map(fetch, ns)):
+                if r is None:
+                    res.append((n, None)); continue
+                items, keys = r
+                res.append((n, items))
+                if not set(keys) - seen: stop = True
+                seen.update(keys)
+            if stop: break
+    return res

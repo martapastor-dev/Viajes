@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scrape pisos.com madrid_capital list pages en paralelo; keep zone+price+size candidates."""
+"""Scrape pisos.com list pages (params.MUNICIPIOS) en paralelo; keep zone+price+size candidates."""
 import re, json, sys, time
 import requests, os
 from bs4 import BeautifulSoup
@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 BASE = 'https://www.pisos.com'
-LIST = BASE + '/venta/pisos-madrid_capital_zona_urbana/{}/'
+LIST = BASE + '/venta/pisos-{}/{}/'
 _P = __import__('params').effective(__import__('params').load())
 SURF_MIN = _P.get('m2_min', 70)
 PRICE_MAX = int(_P['precio_max'] / _P['nego'])  # cota bruta del anuncio
@@ -57,19 +57,19 @@ def in_zone(lat, lon):
 
 sess = requests.Session(); sess.headers.update(UA)
 
-def fetch_page(page):
+def fetch_page(slug, page):
     for attempt in range(3):
         try:
-            r = sess.get(LIST.format(page), timeout=30)
+            r = sess.get(LIST.format(slug, page), timeout=30)
             if r.status_code != 200:
                 time.sleep(2 * (attempt + 1)); continue
             break
         except Exception:
             if attempt == 2:
-                return page, None
+                return None
             time.sleep(2 * (attempt + 1))
     else:
-        return page, None
+        return None
     try:
         soup = BeautifulSoup(r.text, 'html.parser')
         cards = soup.select('div.ad-preview')
@@ -83,7 +83,7 @@ def fetch_page(page):
                                      float(str(g['longitude']).replace(',', '.')))
             except Exception:
                 pass
-        out = []
+        out, keys = [], [c.get('id', '') for c in cards]
         for c in cards:
             iid = c.get('id', '')
             link = BASE + (c.get('data-lnk-href') or '')
@@ -108,22 +108,23 @@ def fetch_page(page):
             out.append({'id': iid, 'price': price, 'surface': surf, 'floor': floor,
                         'lat': latlon[0], 'lon': latlon[1], 'url': link, 'hood': hood,
                         'agency': ag.get_text(strip=True) if ag else None})
-        return page, out
+        return out, keys
     except Exception:
-        return page, None
+        return None
 
 cands = []
 seen = set()
 failed = []
-with ThreadPoolExecutor(max_workers=8) as ex:
-    for page, items in ex.map(fetch_page, range(1, MAXPAGES + 1)):
+for mun in __import__('params').MUNICIPIOS:
+    slug = mun['pisos']
+    res = __import__('params').pages_until_repeat(lambda p: fetch_page(slug, p), MAXPAGES, 8)
+    for page, items in res:
         if items is None:
-            failed.append(page); continue
+            failed.append(f'{slug}:{page}'); continue
         for c in items:
             if c['id'] in seen: continue
             seen.add(c['id']); cands.append(c)
-        if page % 40 == 0:
-            print(f'page {page}, candidates {len(cands)}', flush=True)
+    print(f'{mun["name"]}: {len(res)} páginas, candidates {len(cands)}', flush=True)
 
 if failed:
     sys.exit(f'páginas fallidas tras reintentos: {failed} — no se sobreescribe pisos_cands.json')

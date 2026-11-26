@@ -107,8 +107,8 @@ def floor_from(it):
 out, seen = [], set()
 sess = requests.Session(); sess.headers.update(UA)
 
-def fetch_page(page):
-    url = f'{BASE}/es/comprar/viviendas/madrid-capital/todas-las-zonas/l/{page}?maxPrice={int(PRICE_MAX)}&minSurface={SURF_MIN}&sortType=publicationDate&sortOrderDesc=true'
+def fetch_page(slug, page):
+    url = f'{BASE}/es/comprar/viviendas/{slug}/todas-las-zonas/l/{page}?maxPrice={int(PRICE_MAX)}&minSurface={SURF_MIN}&sortType=publicationDate&sortOrderDesc=true'
     for attempt in range(3):
         try:
             r = sess.get(url, timeout=30)
@@ -124,18 +124,20 @@ def fetch_page(page):
             time.sleep(2 * (attempt + 1))
     return page, None, []
 
-page = 1
-_, count, items = fetch_page(1)
-if count is None:
-    sys.exit('página 1 de fotocasa falló — no se sobreescribe fc_raw.json')
-print('total', count)
-npages = math.ceil(count/31)
-with ThreadPoolExecutor(max_workers=6) as ex:
-    results = [(1, count, items)] + list(ex.map(fetch_page, range(2, npages + 1)))
-failed = [p for p, c, _ in results if c is None]
-if failed:
-    sys.exit(f'páginas fallidas tras reintentos: {failed} — no se sobreescribe fc_raw.json')
-pages_items = [its for _, _, its in results]
+pages_items = []
+for mun in __import__('params').MUNICIPIOS:
+    slug = mun['fotocasa']
+    _, count, items = fetch_page(slug, 1)
+    if count is None:
+        sys.exit(f'página 1 de fotocasa ({slug}) falló — no se sobreescribe fc_raw.json')
+    print('total', mun['name'], count)
+    npages = math.ceil(count/31)
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        results = [(1, count, items)] + list(ex.map(lambda p: fetch_page(slug, p), range(2, npages + 1)))
+    failed = [p for p, c, _ in results if c is None]
+    if failed:
+        sys.exit(f'páginas fallidas tras reintentos ({slug}): {failed} — no se sobreescribe fc_raw.json')
+    pages_items += [its for _, _, its in results]
 for items in pages_items:
     for it in items:
         iid = it['id']

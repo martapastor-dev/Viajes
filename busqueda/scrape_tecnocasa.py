@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Scrape tecnocasa.es madrid list pages: JSON embebido en :estate de cada estate-card."""
+"""Scrape tecnocasa.es list pages (params.MUNICIPIOS): JSON embebido en :estate de cada estate-card."""
 import re, json, html, time, sys, os
 import requests
 from concurrent.futures import ThreadPoolExecutor
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
-LIST = 'https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid/madrid.html/pag-{}'
+LIST = 'https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/{}.html/pag-{}'
 _P = __import__('params').effective(__import__('params').load())
 SURF_MIN = _P.get('m2_min', 70)
 PRICE_MAX = int(_P['precio_max'] / _P['nego'])  # cota bruta del anuncio
@@ -15,17 +15,18 @@ D = __import__('os').path.dirname(__import__('os').path.abspath(__file__))
 sess = requests.Session(); sess.headers.update(UA)
 BLOB = re.compile(r':estate="(\{.*?\})"\s+:highlight', re.S)
 
-def page(n):
+def page(slug, n):
     try:
-        r = sess.get(LIST.format(n), timeout=30)
+        r = sess.get(LIST.format(slug, n), timeout=30)
         if r.status_code != 200:
-            return n, []
-        out = []
+            return [], []
+        out, keys = [], []
         for raw in BLOB.findall(r.text):
             try:
                 j = json.loads(html.unescape(raw))
             except Exception:
                 continue
+            keys.append(str(j.get('id')))
             mp = re.search(r'([\d.]+)', j.get('price') or '')
             ms = re.search(r'([\d.]+)', j.get('surface') or '')
             if not mp or not ms:
@@ -39,30 +40,28 @@ def page(n):
                         'url': j.get('detail_url'), 'hood': hood,
                         'agency': 'Tecnocasa', 'pics': len(j.get('images') or []),
                         'rooms': j.get('rooms'), 'src': 'Tecnocasa'})
-        return n, out
+        return out, keys
     except Exception:
-        return n, None
+        return None
 
 cands, seen, failed = [], set(), []
-with ThreadPoolExecutor(max_workers=6) as ex:
-    for n, out in ex.map(page, range(1, MAXPAGES + 1)):
+for mun in __import__('params').MUNICIPIOS:
+    slug = mun['tecnocasa']
+    for n, out in __import__('params').pages_until_repeat(lambda p: page(slug, p), MAXPAGES, 6):
         if out is None:
-            failed.append(n); continue
-        if not out and n > 1:
-            continue
+            failed.append((slug, n)); continue
         for c in out:
             if c['id'] in seen: continue
             seen.add(c['id']); cands.append(c)
-        if n > 60:
-            pass
 # una segunda pasada por si alguna página falló
-for n in list(failed):
-    _, out = page(n)
+for slug, n in list(failed):
+    r = page(slug, n)
+    out = r and r[0]
     if out:
         for c in out:
             if c['id'] not in seen:
                 seen.add(c['id']); cands.append(c)
-        failed.remove(n)
+        failed.remove((slug, n))
 
 print('cands:', len(cands), 'failed:', failed)
 if failed and os.path.exists(D + '/tc_cands.json'):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scrape habitaclia.com madrid capital: JSON-LD ItemList + fichas."""
+"""Scrape habitaclia.com (params.MUNICIPIOS): JSON-LD ItemList + fichas."""
 import re, json, os, time, hashlib
 import requests
 from bs4 import BeautifulSoup
@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 D = os.path.dirname(os.path.abspath(__file__))
-LIST = 'https://www.habitaclia.com/comprar/viviendas/madrid-provincia/madrid-capital/s/{}'
+LIST = 'https://www.habitaclia.com/comprar/viviendas/madrid-provincia/{}/s'
 _P = __import__('params').effective(__import__('params').load())
 SURF_MIN = _P.get('m2_min', 70)
 PRICE_MAX = int(_P['precio_max'] / _P['nego'])  # cota bruta del anuncio
@@ -37,21 +37,23 @@ def ldjsons(t):
         except Exception: pass
     return out
 
-def page(n):
+def page(slug, n):
     try:
-        url = 'https://www.habitaclia.com/comprar/viviendas/madrid-provincia/madrid-capital/s' if n == 1 else LIST.format(n)
+        url = LIST.format(slug) + ('' if n == 1 else f'/{n}')
         r = sess.get(url, timeout=30)
-        if r.status_code != 200: return n, None
+        if r.status_code != 200: return None
         urls = re.findall(r'href="(/comprar/[^"]+/d)"', r.text)
-        return n, ['https://www.habitaclia.com' + u for u in dict.fromkeys(urls)]
+        out = ['https://www.habitaclia.com' + u for u in dict.fromkeys(urls)]
+        return out, out
     except Exception:
-        return n, None
+        return None
 
 urls, seen, failed = [], set(), []
-with ThreadPoolExecutor(max_workers=4) as ex:
-    for n, out in ex.map(page, range(1, MAXPAGES + 1)):
+for mun in __import__('params').MUNICIPIOS:
+    slug = mun['habitaclia']
+    for n, out in __import__('params').pages_until_repeat(lambda p: page(slug, p), MAXPAGES, 4):
         if out is None:
-            failed.append(n); continue
+            failed.append(f'{slug}:{n}'); continue
         for u in out:
             if u not in seen:
                 seen.add(u); urls.append(u)
