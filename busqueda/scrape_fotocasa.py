@@ -131,7 +131,7 @@ for mun in __import__('params').MUNICIPIOS:
     if count is None:
         sys.exit(f'página 1 de fotocasa ({slug}) falló — no se sobreescribe fc_raw.json')
     print('total', mun['name'], count)
-    npages = math.ceil(count/31)
+    npages = math.ceil(count/max(len(items) or 30, 1))
     with ThreadPoolExecutor(max_workers=6) as ex:
         results = [(1, count, items)] + list(ex.map(lambda p: fetch_page(slug, p), range(2, npages + 1)))
     failed = [p for p, c, _ in results if c is None]
